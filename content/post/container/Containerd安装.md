@@ -1,7 +1,7 @@
 ---
 title: "Containerd安装"
 date: 2023-02-27T10:58:02+08:00
-draft: true
+draft: false
 tags: ["Container"]
 image: "https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/containerd-horizontal-color.png"
 ---

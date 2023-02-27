@@ -2,7 +2,7 @@
 title: "Shadowsocks部署"
 date: 2023-02-27T16:02:14+08:00
 slug: "Hugo Slug"
-draft: true
+draft: false
 ---
 
 最近乘着双十一有优惠，买了台香港的服务器，之前一直用公司的，打算换成自己的，写篇博客记录一下，直接开始

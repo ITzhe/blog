@@ -2,7 +2,7 @@
 title: "Kubectl管理多套k8s"
 date: 2023-02-27T15:59:25+08:00
 slug: "Hugo Slug"
-draft: true
+draft: false
 ---
 
 注意：

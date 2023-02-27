@@ -2,7 +2,8 @@
 title: "Containerd常用命令"
 date: 2023-02-27T16:03:31+08:00
 slug: "Hugo Slug"
-draft: true
+draft: false
+image: "https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/containerd-horizontal-color.png"
 ---
 
 拉取镜像
