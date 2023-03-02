@@ -6,7 +6,269 @@
         <description>Recent content on 菜菜的运维之路</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Thu, 02 Mar 2023 17:44:11 +0800</lastBuildDate><atom:link href="https://caizhe.org/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Thu, 02 Mar 2023 20:52:54 +0800</lastBuildDate><atom:link href="https://caizhe.org/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Redis优化</title>
+        <link>https://caizhe.org/p/redis%E4%BC%98%E5%8C%96/</link>
+        <pubDate>Thu, 02 Mar 2023 20:52:54 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/redis%E4%BC%98%E5%8C%96/</guid>
+        <description>&lt;h1 id=&#34;redis-持久化方式&#34;&gt;Redis 持久化方式&lt;/h1&gt;
+&lt;p&gt;Redis 提供了多种不同级别的持久化方式：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;RDB 持久化可以在指定的时间间隔内生成数据集的时间点快照（point-in-time snapshot）。
+
+AOF AOF 持久化记录服务器执行的所有写操作命令，并在服务器启动时，通过重新执行这些命令来还原数据集。	
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Redis 还可以同时使用 AOF 持久化和 RDB 持久化。 在这种情况下， 当 Redis 重启时， 它会优先使用 AOF 文件来还原数据集， 因为 AOF 文件保存的数据集通常比 RDB 文件所保存的数据集更完整。&lt;/p&gt;
+&lt;h2 id=&#34;rdb-优缺点&#34;&gt;RDB 优缺点&lt;/h2&gt;
+&lt;p&gt;优：故障恢复的时候特别快，最大化Redis性能；直接fork一个子进程，之后的所有保存工作全交给子进程；支持的功能更多。&lt;/p&gt;
+&lt;p&gt;缺：如果在未保存快照的时候故障，会丢失部分数据；子进程在fork的时候会非常影响性能；可能会造成客户端连接的停顿。&lt;/p&gt;
+&lt;h2 id=&#34;aof-优缺点&#34;&gt;AOF 优缺点&lt;/h2&gt;
+&lt;p&gt;优：数据相比RDB可能更完整一些，因为是每秒写入一次，最多丢一秒的数据；操作追加到日志文件，可重写；
+持久化记录服务器执行的所有写操作命令，并在服务器启动时，通过重新执行这些命令来还原数据集。新命令会被追加到文件的末尾。
+Redis 还可以在后台对 AOF 文件进行重写（rewrite），使得 AOF 文件的体积不会超出保存数据集状态所需的实际大小。
+（什么是重写：set a 1，set a 2 set a 3，只记录set a 3）&lt;/p&gt;
+&lt;p&gt;缺：体积大于RDB，恢复速度慢于RDB&lt;/p&gt;
+&lt;h1 id=&#34;rrdis-主从原理&#34;&gt;Rrdis 主从原理&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;1、当从库和主库建立MS关系后，会向主数据库发送PSYNC命令；
+2、主库接收到PSYNC命令后会开始在后台保存快照（RDB持久化过程），并将期间接收到的写请求写到缓存区；
+3、当快照完成后，主Redis会将快照文件和所有缓存的写命令发送给从Redis；
+4、从Redis接收到后，会载入快照文件并且执行收到的缓存的命令；
+5、主Redis每当接收到写命令时就会将命令发送从Redis，从而保证数据的一致；
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;redis-优化&#34;&gt;Redis 优化&lt;/h1&gt;
+&lt;p&gt;更改端口&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;port 6379		
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;设置密码&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;requirepass XXXXXX
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;绑定地址&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;bind 10.0.0.10
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;后台运行&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;daemonize yes
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;日志级别&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;loglevel warning
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;日志位置&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;logfile &amp;quot;/var/log/redis_6379.log&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;持久化&lt;/p&gt;
+&lt;p&gt;建议master关闭，slave开启&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;save 900 1
+save 300 10
+save 60 10000                  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;开启只读&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;slave-read-only yes
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;慢查询&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;slowlog-log-slower-than 5000
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;最大内存&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;maxmemory 5gb
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;数据淘汰机制&#34;&gt;数据淘汰机制&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;volatile-lru：使用LRU算法进行数据淘汰（淘汰上次使用时间最早的，且使用次数最少的key），只淘汰设定了有效期的key
+allkeys-lru：使用LRU算法进行数据淘汰，所有的key都可以被淘汰
+volatile-random：随机淘汰数据，只淘汰设定了有效期的key
+allkeys-random：随机淘汰数据，所有的key都可以被淘汰
+volatile-ttl：淘汰剩余有效期最短的key&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        <item>
+        <title>linux系统优化</title>
+        <link>https://caizhe.org/p/linux%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96/</link>
+        <pubDate>Thu, 02 Mar 2023 20:49:41 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/linux%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96/</guid>
+        <description>&lt;h1 id=&#34;系统优化&#34;&gt;系统优化&lt;/h1&gt;
+&lt;p&gt;1.精简开机自启动&lt;/p&gt;
+&lt;p&gt;2.禁止ROOT远程登录，更改SSH端口，远程登录改为秘钥认证，如果有必要换成VPN内网连接。&lt;/p&gt;
+&lt;p&gt;3.根据业务关闭IPtables、关闭Selinux。&lt;/p&gt;
+&lt;p&gt;4.更换国内较快的YUM源&lt;/p&gt;
+&lt;p&gt;5.调整文件字符集，最好为UTF-8&lt;/p&gt;
+&lt;p&gt;7.修改系统登录信息 /etc/issue&lt;/p&gt;
+&lt;p&gt;8.时间同步&lt;/p&gt;
+&lt;p&gt;9.设置连接终端超时&lt;/p&gt;
+&lt;p&gt;10.不要使用IP地址，尽量使用主机名。&lt;/p&gt;
+&lt;p&gt;11.锁文件（慎用）&lt;/p&gt;
+&lt;p&gt;6.调整文件描述符大小&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;vim /etc/security/limits.conf
+
+* soft nofile 65535
+* hard nofile 65535 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;内核优化&#34;&gt;内核优化&lt;/h1&gt;
+&lt;p&gt;开启内核转发&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.ip_forward = 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;设置timewait的数量，默认180000&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipve.tcp_max_tw_buckets = 6000
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;用来设定允许系统打开的端口范围。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.ip_local_port_range = 1024 65000
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;设置启用timewait快速回收。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_tw_recycle = 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;用于设置开启重用，允许将TIME-WAIT sockets重新用于新的TCP连接&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_tw_reuse = 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;开启SYN Cookies，当出现SYN等待队列溢出时，启用cookies进行处理。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_syncookies = 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;用于调节系统同时发起的tcp连接数，在高并发的请求中，默认的值可能会导致链接超时或者重传，因此，需要结合并发请求数来调节此值。默认值是128&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.core.somaxconn = 262144
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许发送到队列的数据包的最大数目。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.core.netdev_max_backlog = 262144
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;用于设定系统中最多有多少个TCP套接字不被关联到任何一个用户文件句柄上。如果超过这个数字，孤立连接将立即被复位并打印出警告信息。这个限制只是为了防止简单的DoS攻击。不能过分依靠这个限制甚至人为减小这个值，更多的情况下应该增加这个值&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_max_orphans = 262144
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;记录那些尚未收到客户端确认信息的连接请求的最大值。对于有128MB内存的系统而言，此参数的默认值是1024，对小内存的系统则是128&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_max_syn_backlog = 262144
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;内核放弃连接之前发送SYN+ACK包的数量。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_synack_retries = 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在内核放弃建立连接之前发送SYN包的数量。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_syn_retries = 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;设置套接字保持在FIN-WAIT-2状态的时间。默认值是60秒&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_fin_timeout = 1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当长连接启用的时候，TCP发送长连接消息的频度。默认值是2小时&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;net.ipv4.tcp_keepalive_time = 30
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调整使用swap分区的使用率/百分百。(100-10)90，当内存使用率达到90使用swap，redis服务器建议为0&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;/proc/sys/vm/swappiness 
+10
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这篇文章较短，未来会不断完善，欢迎大家提供建议。&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>Nginx优化</title>
+        <link>https://caizhe.org/p/nginx%E4%BC%98%E5%8C%96/</link>
+        <pubDate>Thu, 02 Mar 2023 20:46:18 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/nginx%E4%BC%98%E5%8C%96/</guid>
+        <description>&lt;p&gt;nginx 的优化分为两个小方向：性能优化 &amp;amp; 安全优化&lt;/p&gt;
+&lt;h2 id=&#34;性能优化&#34;&gt;性能优化&lt;/h2&gt;
+&lt;p&gt;开启gzip压缩&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;gzip on;
+gzip_min_length  1k;
+gzip_buffers     4 32k;
+gzip_http_version 1.1;
+gzip_comp_level 2;
+gzip_types  text/css text/js text/xml application/javascript;
+gzip_vary on;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用expires 缓存&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    location ~^/(images|javascript|js|css|flash|media|static)/ {
+      expires 30d;
+    }
+
+	 location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
+	{
+	      expires      3650d;
+	}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用epoll模型&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;use epoll;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;配置多个work进程&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;与CPU的核数相等 or CPU的核数 X2
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调整当进程的最大连接数&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;worker_connections  20480；
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调整进程可打开的的最大文件数&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;worker_rlimit_nofile 65535;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;设置连接超时&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;keepalive_timeout  300;
+
+JAVA应用经量使用长连接、如果是PHP的尽量使用短连接，因为Java应用要消耗的资源和时间要比PHP跟多（具体依然要看业务）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;客户端请求头超时时间/大小&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;client_header_timeout 15s;	
+client_header_buffer_size 10k;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;客户端请求主体超时时间&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;client_header_timeout 15s;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;用户上传大小的限制&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;client_max_body_size        10m;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;开启高效文件传输模式&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sendfile       on;
+tcp_nopush     on;
+aio            on;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;为后端代理服务器设置缓冲区&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;proxy_buffering on;
+proxy_buffer_size 64k;
+proxy_buffers   4 32k;
+proxy_busy_buffers_size 64k;
+proxy_temp_file_write_size 64k;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;制定客户端的超时时间&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;send_timeout 300s;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;安全优化&#34;&gt;安全优化&lt;/h2&gt;
+&lt;p&gt;隐藏版本号&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;server_tokens off;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;更改默认用户组&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;user    nginx;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;静止解析制定目录下的特定文件&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;location ~ ^/images/.*\.(php|php5|.sh|.pl|.py)$ 
+        { 
+     		 deny all; 
+        } 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;限制及指定IP或IP段访问&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;location / { 
+	deny 192.168.1.1; 
+	allow 192.168.1.0/24; 
+	deny all; 
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;限制非法IP&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;if ($remote_addr = 10.0.0.2 ) {
+	return 403;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;禁止非法域名解析访问&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;if （$host !~ caizhe/.org$）{
+	return 500;
+}
+
+server {
+    listen 80 default;
+    return 500;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;限制访问频率&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;http {	
+limit_req_zone $binary_remote_addr zone=ttlsa_com:10m rate=1r/s;
+
+server {
+limit_req zone=one burst=5;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;错误页面优雅显示&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;error_page   500 501 502 503 504  https://caizhe.org;
+error_page 	 400 403 404 405 408 410 411 412 413 414 415 https://caizhe.org;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用普通用户启动nginx&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>Containerd常用命令</title>
         <link>https://caizhe.org/p/containerd%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</link>
         <pubDate>Thu, 02 Mar 2023 17:44:11 +0800</pubDate>

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='系统优化 1.精简开机自启动
+2.禁止ROOT远程登录，更改SSH端口，远程登录改为秘钥认证，如果有必要换成VPN内网连接。
+3.根据业务关闭IPtables、关闭Selinux。
+4.更换国内较快的YUM源
+5.调整文件字符集，最好为UTF-8
+7.修改系统登录信息 /etc/issue
+8.时间同步
+9.设置连接终端超时
+10.不要使用IP地址，尽量使用主机名。
+11.锁文件（慎用）
+6.调整文件描述符大小
+vim /etc/security/limits.conf* soft nofile 65535* hard nofile 65535 内核优化 开启内核转发
+net.ipv4.ip_forward = 1设置timewait的数量，默认180000
+net.ipve.tcp_max_tw_buckets = 6000用来设定允许系统打开的端口范围。
+net.ipv4.ip_local_port_range = 1024 65000设置启用timewait快速回收。
+net.ipv4.tcp_tw_recycle = 1用于设置开启重用，允许将TIME-WAIT sockets重新用于新的TCP连接
+net.ipv4.tcp_tw_reuse = 1开启SYN Cookies，当出现SYN等待队列溢出时，启用cookies进行处理。
+net.ipv4.tcp_syncookies = 1用于调节系统同时发起的tcp连接数，在高并发的请求中，默认的值可能会导致链接超时或者重传，因此，需要结合并发请求数来调节此值。默认值是128
+net.core.somaxconn = 262144当每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许发送到队列的数据包的最大数目。
+net.core.netdev_max_backlog = 262144用于设定系统中最多有多少个TCP套接字不被关联到任何一个用户文件句柄上。如果超过这个数字，孤立连接将立即被复位并打印出警告信息。这个限制只是为了防止简单的DoS攻击。不能过分依靠这个限制甚至人为减小这个值，更多的情况下应该增加这个值
+net.ipv4.tcp_max_orphans = 262144记录那些尚未收到客户端确认信息的连接请求的最大值。对于有128MB内存的系统而言，此参数的默认值是1024，对小内存的系统则是128
+net.ipv4.tcp_max_syn_backlog = 262144内核放弃连接之前发送SYN&#43;ACK包的数量。
+net.ipv4.tcp_synack_retries = 1在内核放弃建立连接之前发送SYN包的数量。'>
+<title>linux系统优化</title>
+
+<link rel='canonical' href='https://caizhe.org/p/linux%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96/'>
+
+<link rel="stylesheet" href="/scss/style.min.5be32ca3f6e1a997c75795c4359147cc6d4fbd34948c0acd51e31d237033978a.css"><meta property='og:title' content='linux系统优化'>
+<meta property='og:description' content='系统优化 1.精简开机自启动
+2.禁止ROOT远程登录，更改SSH端口，远程登录改为秘钥认证，如果有必要换成VPN内网连接。
+3.根据业务关闭IPtables、关闭Selinux。
+4.更换国内较快的YUM源
+5.调整文件字符集，最好为UTF-8
+7.修改系统登录信息 /etc/issue
+8.时间同步
+9.设置连接终端超时
+10.不要使用IP地址，尽量使用主机名。
+11.锁文件（慎用）
+6.调整文件描述符大小
+vim /etc/security/limits.conf* soft nofile 65535* hard nofile 65535 内核优化 开启内核转发
+net.ipv4.ip_forward = 1设置timewait的数量，默认180000
+net.ipve.tcp_max_tw_buckets = 6000用来设定允许系统打开的端口范围。
+net.ipv4.ip_local_port_range = 1024 65000设置启用timewait快速回收。
+net.ipv4.tcp_tw_recycle = 1用于设置开启重用，允许将TIME-WAIT sockets重新用于新的TCP连接
+net.ipv4.tcp_tw_reuse = 1开启SYN Cookies，当出现SYN等待队列溢出时，启用cookies进行处理。
+net.ipv4.tcp_syncookies = 1用于调节系统同时发起的tcp连接数，在高并发的请求中，默认的值可能会导致链接超时或者重传，因此，需要结合并发请求数来调节此值。默认值是128
+net.core.somaxconn = 262144当每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许发送到队列的数据包的最大数目。
+net.core.netdev_max_backlog = 262144用于设定系统中最多有多少个TCP套接字不被关联到任何一个用户文件句柄上。如果超过这个数字，孤立连接将立即被复位并打印出警告信息。这个限制只是为了防止简单的DoS攻击。不能过分依靠这个限制甚至人为减小这个值，更多的情况下应该增加这个值
+net.ipv4.tcp_max_orphans = 262144记录那些尚未收到客户端确认信息的连接请求的最大值。对于有128MB内存的系统而言，此参数的默认值是1024，对小内存的系统则是128
+net.ipv4.tcp_max_syn_backlog = 262144内核放弃连接之前发送SYN&#43;ACK包的数量。
+net.ipv4.tcp_synack_retries = 1在内核放弃建立连接之前发送SYN包的数量。'>
+<meta property='og:url' content='https://caizhe.org/p/linux%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96/'>
+<meta property='og:site_name' content='菜菜的运维之路'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='调优' /><meta property='article:published_time' content='2023-03-02T20:49:41&#43;08:00'/><meta property='article:modified_time' content='2023-03-02T20:49:41&#43;08:00'/>
+<meta name="twitter:title" content="linux系统优化">
+<meta name="twitter:description" content="系统优化 1.精简开机自启动
+2.禁止ROOT远程登录，更改SSH端口，远程登录改为秘钥认证，如果有必要换成VPN内网连接。
+3.根据业务关闭IPtables、关闭Selinux。
+4.更换国内较快的YUM源
+5.调整文件字符集，最好为UTF-8
+7.修改系统登录信息 /etc/issue
+8.时间同步
+9.设置连接终端超时
+10.不要使用IP地址，尽量使用主机名。
+11.锁文件（慎用）
+6.调整文件描述符大小
+vim /etc/security/limits.conf* soft nofile 65535* hard nofile 65535 内核优化 开启内核转发
+net.ipv4.ip_forward = 1设置timewait的数量，默认180000
+net.ipve.tcp_max_tw_buckets = 6000用来设定允许系统打开的端口范围。
+net.ipv4.ip_local_port_range = 1024 65000设置启用timewait快速回收。
+net.ipv4.tcp_tw_recycle = 1用于设置开启重用，允许将TIME-WAIT sockets重新用于新的TCP连接
+net.ipv4.tcp_tw_reuse = 1开启SYN Cookies，当出现SYN等待队列溢出时，启用cookies进行处理。
+net.ipv4.tcp_syncookies = 1用于调节系统同时发起的tcp连接数，在高并发的请求中，默认的值可能会导致链接超时或者重传，因此，需要结合并发请求数来调节此值。默认值是128
+net.core.somaxconn = 262144当每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许发送到队列的数据包的最大数目。
+net.core.netdev_max_backlog = 262144用于设定系统中最多有多少个TCP套接字不被关联到任何一个用户文件句柄上。如果超过这个数字，孤立连接将立即被复位并打印出警告信息。这个限制只是为了防止简单的DoS攻击。不能过分依靠这个限制甚至人为减小这个值，更多的情况下应该增加这个值
+net.ipv4.tcp_max_orphans = 262144记录那些尚未收到客户端确认信息的连接请求的最大值。对于有128MB内存的系统而言，此参数的默认值是1024，对小内存的系统则是128
+net.ipv4.tcp_max_syn_backlog = 262144内核放弃连接之前发送SYN&#43;ACK包的数量。
+net.ipv4.tcp_synack_retries = 1在内核放弃建立连接之前发送SYN包的数量。">
+    <link rel="shortcut icon" href="logo.ico" />
+
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/Bob-log-150x150_hu703c3f72dde55974625e11e7393158f0_3014_300x0_resize_q75_box.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🍥</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">菜菜的运维之路</a></h1>
+            <h2 class="site-description">十年运维路漫漫， 辛苦付出不曾闲。 高效手段成绩显， 辛苦不再现眼前。
+祝愿前程光明美， 感慨历程酸甜苦。 依旧是那个你， 工作愉悦如鱼水。</h2>
+        </div>
+    </header><ol class="social-menu">
+            
+                <li>
+                    <a 
+                        href='https://github.com/CaiJimmy/hugo-theme-stack'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://twitter.com'
+                        target="_blank"
+                        title="Twitter"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-twitter" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M22 4.01c-1 .49 -1.98 .689 -3 .99c-1.121 -1.265 -2.783 -1.335 -4.38 -.737s-2.643 2.06 -2.62 3.737v1c-3.245 .083 -6.135 -1.395 -8 -4c0 0 -4.182 7.433 4 11c-1.872 1.247 -3.739 2.088 -6 2c3.308 1.803 6.913 2.423 10.034 1.517c3.58 -1.04 6.522 -3.723 7.651 -7.742a13.84 13.84 0 0 0 .497 -3.753c-.002 -.249 1.51 -2.772 1.818 -4.013z" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+                <li id="i18n-switch">  
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M4 5h7" />
+  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
+  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
+  <path d="M12 20l4 -9l4 9" />
+  <path d="M19.1 18h-6.2" />
+</svg>
+
+
+
+                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
+                        
+                            <option value="https://caizhe.org/" selected>中文</option>
+                        
+                            <option value="https://caizhe.org/en/" >English</option>
+                        
+                            <option value="https://caizhe.org/ar/" >عربي</option>
+                        
+                    </select>
+                </li>
+            
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <span>暗色模式</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+
+    
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/linux%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96/">linux系统优化</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Mar 02, 2023</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 1 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h1 id="系统优化">系统优化</h1>
+<p>1.精简开机自启动</p>
+<p>2.禁止ROOT远程登录，更改SSH端口，远程登录改为秘钥认证，如果有必要换成VPN内网连接。</p>
+<p>3.根据业务关闭IPtables、关闭Selinux。</p>
+<p>4.更换国内较快的YUM源</p>
+<p>5.调整文件字符集，最好为UTF-8</p>
+<p>7.修改系统登录信息 /etc/issue</p>
+<p>8.时间同步</p>
+<p>9.设置连接终端超时</p>
+<p>10.不要使用IP地址，尽量使用主机名。</p>
+<p>11.锁文件（慎用）</p>
+<p>6.调整文件描述符大小</p>
+<pre><code>vim /etc/security/limits.conf
+
+* soft nofile 65535
+* hard nofile 65535 
+</code></pre>
+<h1 id="内核优化">内核优化</h1>
+<p>开启内核转发</p>
+<pre><code>net.ipv4.ip_forward = 1
+</code></pre>
+<p>设置timewait的数量，默认180000</p>
+<pre><code>net.ipve.tcp_max_tw_buckets = 6000
+</code></pre>
+<p>用来设定允许系统打开的端口范围。</p>
+<pre><code>net.ipv4.ip_local_port_range = 1024 65000
+</code></pre>
+<p>设置启用timewait快速回收。</p>
+<pre><code>net.ipv4.tcp_tw_recycle = 1
+</code></pre>
+<p>用于设置开启重用，允许将TIME-WAIT sockets重新用于新的TCP连接</p>
+<pre><code>net.ipv4.tcp_tw_reuse = 1
+</code></pre>
+<p>开启SYN Cookies，当出现SYN等待队列溢出时，启用cookies进行处理。</p>
+<pre><code>net.ipv4.tcp_syncookies = 1
+</code></pre>
+<p>用于调节系统同时发起的tcp连接数，在高并发的请求中，默认的值可能会导致链接超时或者重传，因此，需要结合并发请求数来调节此值。默认值是128</p>
+<pre><code>net.core.somaxconn = 262144
+</code></pre>
+<p>当每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许发送到队列的数据包的最大数目。</p>
+<pre><code>net.core.netdev_max_backlog = 262144
+</code></pre>
+<p>用于设定系统中最多有多少个TCP套接字不被关联到任何一个用户文件句柄上。如果超过这个数字，孤立连接将立即被复位并打印出警告信息。这个限制只是为了防止简单的DoS攻击。不能过分依靠这个限制甚至人为减小这个值，更多的情况下应该增加这个值</p>
+<pre><code>net.ipv4.tcp_max_orphans = 262144
+</code></pre>
+<p>记录那些尚未收到客户端确认信息的连接请求的最大值。对于有128MB内存的系统而言，此参数的默认值是1024，对小内存的系统则是128</p>
+<pre><code>net.ipv4.tcp_max_syn_backlog = 262144
+</code></pre>
+<p>内核放弃连接之前发送SYN+ACK包的数量。</p>
+<pre><code>net.ipv4.tcp_synack_retries = 1
+</code></pre>
+<p>在内核放弃建立连接之前发送SYN包的数量。</p>
+<pre><code>net.ipv4.tcp_syn_retries = 1
+</code></pre>
+<p>设置套接字保持在FIN-WAIT-2状态的时间。默认值是60秒</p>
+<pre><code>net.ipv4.tcp_fin_timeout = 1
+</code></pre>
+<p>当长连接启用的时候，TCP发送长连接消息的频度。默认值是2小时</p>
+<pre><code>net.ipv4.tcp_keepalive_time = 30
+</code></pre>
+<p>调整使用swap分区的使用率/百分百。(100-10)90，当内存使用率达到90使用swap，redis服务器建议为0</p>
+<pre><code>/proc/sys/vm/swappiness 
+10
+</code></pre>
+<p>这篇文章较短，未来会不断完善，欢迎大家提供建议。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/%E8%B0%83%E4%BC%98/">调优</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    <div class="disqus-container">
+    <div id="disqus_thread"></div>
+<script type="application/javascript">
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "hugo-theme-stack" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+<style>
+    .disqus-container {
+        background-color: var(--card-background);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--shadow-l1);
+        padding: var(--card-padding);
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (typeof DISQUS == 'object') {
+            DISQUS.reset({
+                reload: true
+            });
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2020 - 
+        
+        2023 菜菜的运维之路
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.16.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
