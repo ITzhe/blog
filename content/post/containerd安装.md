@@ -1,9 +1,8 @@
 ---
 title: "Containerd安装"
-date: 2023-02-27T10:58:02+08:00
+date: 2023-03-01T17:44:11+08:00
 draft: false
-tags: ["Container"]
-image: "https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/containerd-horizontal-color.png"
+tags: ["container"] 
 ---
 
 1、下载依赖安装包
@@ -20,7 +19,7 @@ wget https://github.com/containerd/containerd/releases/download/v1.5.5/cri-conta
 tar -C / -xzf cri-containerd-cni-1.5.5-linux-amd64.tar.gz
 ```
 
-3、配置：
+3、添加配置文件：
 
 默认配置文件为 `/etc/containerd/config.toml`，我们可以通过如下所示的命令生成
 
@@ -29,13 +28,13 @@ mkdir -p /etc/containerd
 containerd config default > /etc/containerd/config.toml
 ```
 
-4、启动
+4、启动containerd
 
 ```bash
 systemctl enable containerd --now
 ```
 
-5、验证
+5、验证containerd
 
 ```bash
 # ctr version

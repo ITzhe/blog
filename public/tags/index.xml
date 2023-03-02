@@ -6,12 +6,20 @@
         <description>Recent content in Tags on 菜菜的运维之路</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Mon, 27 Feb 2023 10:58:02 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>Container</title>
+        <lastBuildDate>Thu, 02 Mar 2023 17:44:11 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>container</title>
         <link>https://caizhe.org/tags/container/</link>
-        <pubDate>Mon, 27 Feb 2023 10:58:02 +0800</pubDate>
+        <pubDate>Thu, 02 Mar 2023 17:44:11 +0800</pubDate>
         
         <guid>https://caizhe.org/tags/container/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>git</title>
+        <link>https://caizhe.org/tags/git/</link>
+        <pubDate>Wed, 01 Mar 2023 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/git/</guid>
         <description></description>
         </item>
         

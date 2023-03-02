@@ -2,14 +2,35 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://caizhe.org/post/</loc>
-    <lastmod>2023-02-27T16:02:14+08:00</lastmod>
+    <loc>https://caizhe.org/tags/container/</loc>
+    <lastmod>2023-03-02T17:44:11+08:00</lastmod>
   </url><url>
-    <loc>https://caizhe.org/p/hugo-slug/</loc>
-    <lastmod>2023-02-27T16:02:14+08:00</lastmod>
+    <loc>https://caizhe.org/p/containerd%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</loc>
+    <lastmod>2023-03-02T17:44:11+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/post/</loc>
+    <lastmod>2023-03-02T17:44:11+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/tags/</loc>
+    <lastmod>2023-03-02T17:44:11+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://caizhe.org/en/tags/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ar"
+                href="https://caizhe.org/ar/tags/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh-cn"
+                href="https://caizhe.org/tags/"
+                />
   </url><url>
     <loc>https://caizhe.org/</loc>
-    <lastmod>2023-02-27T16:02:14+08:00</lastmod>
+    <lastmod>2023-03-02T17:44:11+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -26,29 +47,14 @@
                 href="https://caizhe.org/"
                 />
   </url><url>
-    <loc>https://caizhe.org/tags/container/</loc>
-    <lastmod>2023-02-27T10:58:02+08:00</lastmod>
-  </url><url>
     <loc>https://caizhe.org/p/containerd%E5%AE%89%E8%A3%85/</loc>
-    <lastmod>2023-02-27T10:58:02+08:00</lastmod>
+    <lastmod>2023-03-01T17:44:11+08:00</lastmod>
   </url><url>
-    <loc>https://caizhe.org/tags/</loc>
-    <lastmod>2023-02-27T10:58:02+08:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://caizhe.org/en/tags/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="ar"
-                href="https://caizhe.org/ar/tags/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh-cn"
-                href="https://caizhe.org/tags/"
-                />
+    <loc>https://caizhe.org/tags/git/</loc>
+    <lastmod>2023-03-01T17:44:11+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/p/gitlab%E5%A4%A7%E6%96%87%E4%BB%B6%E6%B8%85%E7%90%86/</loc>
+    <lastmod>2023-03-01T17:44:11+08:00</lastmod>
   </url><url>
     <loc>https://caizhe.org/archives/</loc>
     <lastmod>2019-05-28T00:00:00+00:00</lastmod>
