@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='名称 版本号 操作系统 Ubuntu 18 k8s 1.22 kubeVIP 0.5 nginx-ingress 1.3.1 关闭防火墙
+ufw disable设置主机名
+1 hostnamectl set-hostname master1.innovsharing.com 设置hosts
+1 2 172.20.55.100 api.k8s.local 172.20.55.46 master1.innovsharing.com 开启内核IPV4转发
+1 2 3 4 cat /etc/sysctl.d/k8s.conf net.bridge.bridge-nf-call-ip6tables = 1 net.bridge.bridge-nf-call-iptables = 1 net.ipv4.ip_forward = 1 bridge-nf 使得 netfilter 可以对 Linux 网桥上的 IPv4/ARP/IPv6 包过滤。比如，设置net.bridge.bridge-nf-call-iptables＝1后，二层的网桥在转发包时也会被 iptables的 FORWARD 规则所过滤。常用的选项包括：
+net.bridge.bridge-nf-call-arptables：是否在 arptables 的 FORWARD 中过滤网桥的 ARP 包
+net.bridge.bridge-nf-call-ip6tables：是否在 ip6tables 链中过滤 IPv6 包
+net.bridge.bridge-nf-call-iptables：是否在 iptables 链中过滤 IPv4 包'>
+<title>Kubenertes1.22高可用安装</title>
+
+<link rel='canonical' href='https://caizhe.org/p/kubenertes1.22%E9%AB%98%E5%8F%AF%E7%94%A8%E5%AE%89%E8%A3%85/'>
+
+<link rel="stylesheet" href="/scss/style.min.5be32ca3f6e1a997c75795c4359147cc6d4fbd34948c0acd51e31d237033978a.css"><meta property='og:title' content='Kubenertes1.22高可用安装'>
+<meta property='og:description' content='名称 版本号 操作系统 Ubuntu 18 k8s 1.22 kubeVIP 0.5 nginx-ingress 1.3.1 关闭防火墙
+ufw disable设置主机名
+1 hostnamectl set-hostname master1.innovsharing.com 设置hosts
+1 2 172.20.55.100 api.k8s.local 172.20.55.46 master1.innovsharing.com 开启内核IPV4转发
+1 2 3 4 cat /etc/sysctl.d/k8s.conf net.bridge.bridge-nf-call-ip6tables = 1 net.bridge.bridge-nf-call-iptables = 1 net.ipv4.ip_forward = 1 bridge-nf 使得 netfilter 可以对 Linux 网桥上的 IPv4/ARP/IPv6 包过滤。比如，设置net.bridge.bridge-nf-call-iptables＝1后，二层的网桥在转发包时也会被 iptables的 FORWARD 规则所过滤。常用的选项包括：
+net.bridge.bridge-nf-call-arptables：是否在 arptables 的 FORWARD 中过滤网桥的 ARP 包
+net.bridge.bridge-nf-call-ip6tables：是否在 ip6tables 链中过滤 IPv6 包
+net.bridge.bridge-nf-call-iptables：是否在 iptables 链中过滤 IPv4 包'>
+<meta property='og:url' content='https://caizhe.org/p/kubenertes1.22%E9%AB%98%E5%8F%AF%E7%94%A8%E5%AE%89%E8%A3%85/'>
+<meta property='og:site_name' content='菜菜的运维之路'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='K8S' /><meta property='article:published_time' content='2023-03-13T11:51:59&#43;08:00'/><meta property='article:modified_time' content='2023-03-13T11:51:59&#43;08:00'/>
+<meta name="twitter:title" content="Kubenertes1.22高可用安装">
+<meta name="twitter:description" content="名称 版本号 操作系统 Ubuntu 18 k8s 1.22 kubeVIP 0.5 nginx-ingress 1.3.1 关闭防火墙
+ufw disable设置主机名
+1 hostnamectl set-hostname master1.innovsharing.com 设置hosts
+1 2 172.20.55.100 api.k8s.local 172.20.55.46 master1.innovsharing.com 开启内核IPV4转发
+1 2 3 4 cat /etc/sysctl.d/k8s.conf net.bridge.bridge-nf-call-ip6tables = 1 net.bridge.bridge-nf-call-iptables = 1 net.ipv4.ip_forward = 1 bridge-nf 使得 netfilter 可以对 Linux 网桥上的 IPv4/ARP/IPv6 包过滤。比如，设置net.bridge.bridge-nf-call-iptables＝1后，二层的网桥在转发包时也会被 iptables的 FORWARD 规则所过滤。常用的选项包括：
+net.bridge.bridge-nf-call-arptables：是否在 arptables 的 FORWARD 中过滤网桥的 ARP 包
+net.bridge.bridge-nf-call-ip6tables：是否在 ip6tables 链中过滤 IPv6 包
+net.bridge.bridge-nf-call-iptables：是否在 iptables 链中过滤 IPv4 包">
+    <link rel="shortcut icon" href="logo.ico" />
+
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/Bob-log-150x150_hu703c3f72dde55974625e11e7393158f0_3014_300x0_resize_q75_box.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🍥</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">菜菜的运维之路</a></h1>
+            <h2 class="site-description">十年运维路漫漫， 辛苦付出不曾闲。 高效手段成绩显， 辛苦不再现眼前。
+祝愿前程光明美， 感慨历程酸甜苦。 依旧是那个你， 工作愉悦如鱼水。</h2>
+        </div>
+    </header><ol class="social-menu">
+            
+                <li>
+                    <a 
+                        href='https://github.com/CaiJimmy/hugo-theme-stack'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://twitter.com'
+                        target="_blank"
+                        title="Twitter"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-twitter" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M22 4.01c-1 .49 -1.98 .689 -3 .99c-1.121 -1.265 -2.783 -1.335 -4.38 -.737s-2.643 2.06 -2.62 3.737v1c-3.245 .083 -6.135 -1.395 -8 -4c0 0 -4.182 7.433 4 11c-1.872 1.247 -3.739 2.088 -6 2c3.308 1.803 6.913 2.423 10.034 1.517c3.58 -1.04 6.522 -3.723 7.651 -7.742a13.84 13.84 0 0 0 .497 -3.753c-.002 -.249 1.51 -2.772 1.818 -4.013z" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/links/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>Links</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+                <li id="i18n-switch">  
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M4 5h7" />
+  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
+  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
+  <path d="M12 20l4 -9l4 9" />
+  <path d="M19.1 18h-6.2" />
+</svg>
+
+
+
+                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
+                        
+                            <option value="https://caizhe.org/" selected>中文</option>
+                        
+                            <option value="https://caizhe.org/en/" >English</option>
+                        
+                            <option value="https://caizhe.org/ar/" >عربي</option>
+                        
+                    </select>
+                </li>
+            
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <span>暗色模式</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+
+    
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/kubenertes1.22%E9%AB%98%E5%8F%AF%E7%94%A8%E5%AE%89%E8%A3%85/">Kubenertes1.22高可用安装</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Mar 13, 2023</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 6 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>名称</th>
+<th>版本号</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>操作系统</td>
+<td>Ubuntu 18</td>
+</tr>
+<tr>
+<td>k8s</td>
+<td>1.22</td>
+</tr>
+<tr>
+<td>kubeVIP</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>nginx-ingress</td>
+<td>1.3.1</td>
+</tr>
+</tbody>
+</table></div>
+<hr>
+<p>关闭防火墙</p>
+<pre><code>ufw disable
+</code></pre>
+<p>设置主机名</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hostnamectl  set-hostname master1.innovsharing.com
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>设置hosts</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">172.20.55.100   api.k8s.local
+</span></span><span class="line"><span class="cl">172.20.55.46    master1.innovsharing.com
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>开启内核IPV4转发</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">cat /etc/sysctl.d/k8s.conf
+</span></span><span class="line"><span class="cl">net.bridge.bridge-nf-call-ip6tables <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">net.bridge.bridge-nf-call-iptables <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">net.ipv4.ip_forward <span class="o">=</span> <span class="m">1</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>bridge-nf 使得 netfilter 可以对 Linux 网桥上的 IPv4/ARP/IPv6 包过滤。比如，设置net.bridge.bridge-nf-call-iptables＝1后，二层的网桥在转发包时也会被 iptables的 FORWARD 规则所过滤。常用的选项包括：</p>
+<p>net.bridge.bridge-nf-call-arptables：是否在 arptables 的 FORWARD 中过滤网桥的 ARP 包<br>
+net.bridge.bridge-nf-call-ip6tables：是否在 ip6tables 链中过滤 IPv6 包<br>
+net.bridge.bridge-nf-call-iptables：是否在 iptables 链中过滤 IPv4 包<br>
+net.bridge.bridge-nf-filter-vlan-tagged：是否在 iptables/arptables 中过滤打了 vlan 标签的包。</p>
+<p>开启IPVS支持</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@master1:~#  cat /etc/modules-load.d/k8s.conf
+</span></span><span class="line"><span class="cl">br_netfilter
+</span></span><span class="line"><span class="cl">ip_vs
+</span></span><span class="line"><span class="cl">ip_vs_rr
+</span></span><span class="line"><span class="cl">ip_vs_wrr
+</span></span><span class="line"><span class="cl">ip_vs_sh
+</span></span><span class="line"><span class="cl"><span class="c1">## use nf_conntrack instead of nf_conntrack_ipv4 for Linux kernel 4.19 and later</span>
+</span></span><span class="line"><span class="cl"><span class="c1">## nf_conntrack_ipv4</span>
+</span></span><span class="line"><span class="cl">nf_conntrack
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">systemctl restart systemd-modules-load.service
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>重启服务器，然后执行<code>lsmod | grep -e ip_vs -e nf_conntrack_ipv4</code>,检查是否开启</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ip_vs_sh               <span class="m">16384</span>  <span class="m">0</span>
+</span></span><span class="line"><span class="cl">ip_vs_wrr              <span class="m">16384</span>  <span class="m">0</span>
+</span></span><span class="line"><span class="cl">ip_vs_rr               <span class="m">16384</span>  <span class="m">0</span>
+</span></span><span class="line"><span class="cl">ip_vs                 <span class="m">155648</span>  <span class="m">6</span> ip_vs_rr,ip_vs_sh,ip_vs_wrr
+</span></span><span class="line"><span class="cl">nf_conntrack          <span class="m">139264</span>  <span class="m">1</span> ip_vs
+</span></span><span class="line"><span class="cl">nf_defrag_ipv6         <span class="m">24576</span>  <span class="m">2</span> nf_conntrack,ip_vs
+</span></span><span class="line"><span class="cl">libcrc32c              <span class="m">16384</span>  <span class="m">2</span> nf_conntrack,ip_vs
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>安装IPVS</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">apt-get install -y ipset ipvsadm
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>安装crontained</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">wget https://github.com/containerd/containerd/releases/download/v1.6.8/cri-containerd-cni-1.6.8-linux-amd64.tar.gz
+</span></span><span class="line"><span class="cl"><span class="c1"># 或者国内下载：</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># wget https://download.fastgit.org/containerd/containerd/releases/download/v1.5.5/cri-containerd-cni-1.5.5-linux-amd64.tar.gz</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">tar -C / -xzf cri-containerd-cni-1.6.8-linux-amd64.tar.gz
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">mkdir -p /etc/containerd
+</span></span><span class="line"><span class="cl">containerd config default &gt; /etc/containerd/config.toml
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>配置crontained，文件位于/etc/containerd/config.toml</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="o">[</span>plugins.<span class="s2">&#34;io.containerd.grpc.v1.cri&#34;</span>.containerd.runtimes.runc.options<span class="o">]</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">SystemdCgroup</span> <span class="o">=</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="o">[</span>plugins.<span class="s2">&#34;io.containerd.grpc.v1.cri&#34;</span>.registry.mirrors<span class="o">]</span>
+</span></span><span class="line"><span class="cl">        <span class="o">[</span>plugins.<span class="s2">&#34;io.containerd.grpc.v1.cri&#34;</span>.registry.mirrors.<span class="s2">&#34;docker.io&#34;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">          <span class="nv">endpoint</span> <span class="o">=</span> <span class="o">[</span><span class="s2">&#34;https://bqr1dr1n.mirror.aliyuncs.com&#34;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">        <span class="o">[</span>plugins.<span class="s2">&#34;io.containerd.grpc.v1.cri&#34;</span>.registry.mirrors.<span class="s2">&#34;k8s.gcr.io&#34;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">          <span class="nv">endpoint</span> <span class="o">=</span> <span class="o">[</span><span class="s2">&#34;https://registry.aliyuncs.com/google_containers&#34;</span><span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">sandbox_image</span> <span class="o">=</span> <span class="s2">&#34;registry.aliyuncs.com/k8sxio/pause:3.6&#34;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>启动crontained</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">systemctl daemon-reload
+</span></span><span class="line"><span class="cl">systemctl <span class="nb">enable</span> containerd --now
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">root@master1:~# ctr version
+</span></span><span class="line"><span class="cl">Client:
+</span></span><span class="line"><span class="cl">  Version:  v1.6.8
+</span></span><span class="line"><span class="cl">  Revision: 9cd3357b7fd7218e4aec3eae239db1f68a5a6ec6
+</span></span><span class="line"><span class="cl">  Go version: go1.17.13
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Server:
+</span></span><span class="line"><span class="cl">  Version:  v1.6.8
+</span></span><span class="line"><span class="cl">  Revision: 9cd3357b7fd7218e4aec3eae239db1f68a5a6ec6
+</span></span><span class="line"><span class="cl">  UUID: 8804ad26-c5c3-4320-846a-b713c2307d5e
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>安装kube-VIP</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">mkdir -p /etc/kubernetes/manifests/
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">VIP</span><span class="o">=</span>172.20.55.100
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">INTERFACE</span><span class="o">=</span>eth0
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ctr run --rm --net-host <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    docker.io/plndr/kube-vip:v0.5.0 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    vip /kube-vip manifest pod <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --interface <span class="nv">$INTERFACE</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --vip <span class="nv">$VIP</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --controlplane <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --arp <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --leaderElection <span class="p">|</span> tee /etc/kubernetes/manifests/kube-vip.yaml 
+</span></span><span class="line"><span class="cl">    &gt; /etc/kubernetes/manifests/kube-vip.yaml
+</span></span><span class="line"><span class="cl">    
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>kube-vip.yaml 内容</p>
+<!-- raw HTML omitted -->
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">apiVersion: v1
+</span></span><span class="line"><span class="cl">kind: Pod
+</span></span><span class="line"><span class="cl">metadata:
+</span></span><span class="line"><span class="cl">  creationTimestamp: null
+</span></span><span class="line"><span class="cl">  name: kube-vip
+</span></span><span class="line"><span class="cl">  namespace: kube-system
+</span></span><span class="line"><span class="cl">spec:
+</span></span><span class="line"><span class="cl">  containers:
+</span></span><span class="line"><span class="cl">  - args:
+</span></span><span class="line"><span class="cl">    - manager
+</span></span><span class="line"><span class="cl">    env:
+</span></span><span class="line"><span class="cl">    - name: vip_arp
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;true&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: port
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;6443&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: vip_interface
+</span></span><span class="line"><span class="cl">      value: eth0
+</span></span><span class="line"><span class="cl">    - name: vip_cidr
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;32&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: cp_enable
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;true&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: cp_namespace
+</span></span><span class="line"><span class="cl">      value: kube-system
+</span></span><span class="line"><span class="cl">    - name: vip_ddns
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;false&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: vip_leaderelection
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;true&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: vip_leaseduration
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;5&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: vip_renewdeadline
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;3&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: vip_retryperiod
+</span></span><span class="line"><span class="cl">      value: <span class="s2">&#34;1&#34;</span>
+</span></span><span class="line"><span class="cl">    - name: vip_address
+</span></span><span class="line"><span class="cl">      value: 172.20.55.100
+</span></span><span class="line"><span class="cl">    - name: prometheus_server
+</span></span><span class="line"><span class="cl">      value: :2112
+</span></span><span class="line"><span class="cl">    image: ghcr.io/kube-vip/kube-vip:v0.5.0
+</span></span><span class="line"><span class="cl">    imagePullPolicy: Always
+</span></span><span class="line"><span class="cl">    name: kube-vip
+</span></span><span class="line"><span class="cl">    resources: <span class="o">{}</span>
+</span></span><span class="line"><span class="cl">    securityContext:
+</span></span><span class="line"><span class="cl">      capabilities:
+</span></span><span class="line"><span class="cl">        add:
+</span></span><span class="line"><span class="cl">        - NET_ADMIN
+</span></span><span class="line"><span class="cl">        - NET_RAW
+</span></span><span class="line"><span class="cl">    volumeMounts:
+</span></span><span class="line"><span class="cl">    - mountPath: /etc/kubernetes/admin.conf
+</span></span><span class="line"><span class="cl">      name: kubeconfig
+</span></span><span class="line"><span class="cl">  hostAliases:
+</span></span><span class="line"><span class="cl">  - hostnames:
+</span></span><span class="line"><span class="cl">    - kubernetes
+</span></span><span class="line"><span class="cl">    ip: 127.0.0.1
+</span></span><span class="line"><span class="cl">  hostNetwork: <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">  volumes:
+</span></span><span class="line"><span class="cl">  - hostPath:
+</span></span><span class="line"><span class="cl">      path: /etc/kubernetes/admin.conf
+</span></span><span class="line"><span class="cl">    name: kubeconfig
+</span></span><span class="line"><span class="cl">status: <span class="o">{}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><!-- raw HTML omitted -->
+<p>安装kubeadm</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">apt-get update <span class="o">&amp;&amp;</span> apt-get install -y apt-transport-https
+</span></span><span class="line"><span class="cl">curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg <span class="p">|</span> apt-key add - 
+</span></span><span class="line"><span class="cl">cat <span class="s">&lt;&lt;EOF &gt;/etc/apt/sources.list.d/kubernetes.list
+</span></span></span><span class="line"><span class="cl"><span class="s">deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
+</span></span></span><span class="line"><span class="cl"><span class="s">EOF</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">apt-get update
+</span></span><span class="line"><span class="cl"><span class="c1"># apt-get install -y kubelet kubeadm kubectl</span>
+</span></span><span class="line"><span class="cl">apt-get install  <span class="nv">kubelet</span><span class="o">=</span>1.22.9-00 <span class="nv">kubeadm</span><span class="o">=</span>1.22.9-00 <span class="nv">kubectl</span><span class="o">=</span>1.22.9-00
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">systemctl <span class="nb">enable</span> kubelet
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>生成K8S 安装配置清单文件</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">kubeadm config print init-defaults --component-configs KubeletConfiguration &gt; kubeadm.yaml
+</span></span></code></pre></td></tr></table>
+</div>
+</div><!-- raw HTML omitted -->
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">apiVersion: kubeadm.k8s.io/v1beta3
+</span></span><span class="line"><span class="cl">bootstrapTokens:
+</span></span><span class="line"><span class="cl">- groups:
+</span></span><span class="line"><span class="cl">  - system:bootstrappers:kubeadm:default-node-token
+</span></span><span class="line"><span class="cl">  token: abcdef.0123456789abcdef
+</span></span><span class="line"><span class="cl">  ttl: 24h0m0s
+</span></span><span class="line"><span class="cl">  usages:
+</span></span><span class="line"><span class="cl">  - signing
+</span></span><span class="line"><span class="cl">  - authentication
+</span></span><span class="line"><span class="cl">kind: InitConfiguration
+</span></span><span class="line"><span class="cl">localAPIEndpoint:
+</span></span><span class="line"><span class="cl">  advertiseAddress: 172.20.55.46   <span class="c1"># 本机IP地址</span>
+</span></span><span class="line"><span class="cl">  bindPort: <span class="m">6443</span>
+</span></span><span class="line"><span class="cl">nodeRegistration:
+</span></span><span class="line"><span class="cl">  criSocket: /run/containerd/containerd.sock    <span class="c1"># 使用 containerd的Unix socket 地址</span>
+</span></span><span class="line"><span class="cl">  imagePullPolicy: IfNotPresent
+</span></span><span class="line"><span class="cl">  name: master1    <span class="c1"># 节点名称</span>
+</span></span><span class="line"><span class="cl">  taints: null
+</span></span><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">apiVersion: kubeproxy.config.k8s.io/v1alpha1
+</span></span><span class="line"><span class="cl">kind: KubeProxyConfiguration
+</span></span><span class="line"><span class="cl">mode: ipvs  <span class="c1"># kube-proxy 模式</span>
+</span></span><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">apiServer:
+</span></span><span class="line"><span class="cl">  timeoutForControlPlane: 4m0s
+</span></span><span class="line"><span class="cl">apiVersion: kubeadm.k8s.io/v1beta3
+</span></span><span class="line"><span class="cl">certificatesDir: /etc/kubernetes/pki
+</span></span><span class="line"><span class="cl">clusterName: kubernetes
+</span></span><span class="line"><span class="cl">controllerManager: <span class="o">{}</span>
+</span></span><span class="line"><span class="cl">dns: <span class="o">{}</span>
+</span></span><span class="line"><span class="cl">etcd:
+</span></span><span class="line"><span class="cl">  local:
+</span></span><span class="line"><span class="cl">    dataDir: /var/lib/etcd
+</span></span><span class="line"><span class="cl">imageRepository: registry.aliyuncs.com/google_containers    <span class="c1"># 阿里云镜像站</span>
+</span></span><span class="line"><span class="cl">kind: ClusterConfiguration
+</span></span><span class="line"><span class="cl">kubernetesVersion: 1.22.9
+</span></span><span class="line"><span class="cl">controlPlaneEndpoint: 172.20.55.100:6443  <span class="c1"># 设置控制平面Endpoint地址</span>
+</span></span><span class="line"><span class="cl">networking:
+</span></span><span class="line"><span class="cl">  dnsDomain: cluster.local
+</span></span><span class="line"><span class="cl">  serviceSubnet: 10.96.0.0/12
+</span></span><span class="line"><span class="cl">scheduler: <span class="o">{}</span>
+</span></span><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">apiVersion: kubelet.config.k8s.io/v1beta1
+</span></span><span class="line"><span class="cl">authentication:
+</span></span><span class="line"><span class="cl">  anonymous:
+</span></span><span class="line"><span class="cl">    enabled: <span class="nb">false</span>
+</span></span><span class="line"><span class="cl">  webhook:
+</span></span><span class="line"><span class="cl">    cacheTTL: 0s
+</span></span><span class="line"><span class="cl">    enabled: <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">  x509:
+</span></span><span class="line"><span class="cl">    clientCAFile: /etc/kubernetes/pki/ca.crt
+</span></span><span class="line"><span class="cl">authorization:
+</span></span><span class="line"><span class="cl">  mode: Webhook
+</span></span><span class="line"><span class="cl">  webhook:
+</span></span><span class="line"><span class="cl">    cacheAuthorizedTTL: 0s
+</span></span><span class="line"><span class="cl">    cacheUnauthorizedTTL: 0s
+</span></span><span class="line"><span class="cl">cgroupDriver: systemd
+</span></span><span class="line"><span class="cl">clusterDNS:
+</span></span><span class="line"><span class="cl">- 10.96.0.10
+</span></span><span class="line"><span class="cl">clusterDomain: cluster.local
+</span></span><span class="line"><span class="cl">cpuManagerReconcilePeriod: 0s
+</span></span><span class="line"><span class="cl">evictionPressureTransitionPeriod: 0s
+</span></span><span class="line"><span class="cl">fileCheckFrequency: 0s
+</span></span><span class="line"><span class="cl">healthzBindAddress: 127.0.0.1
+</span></span><span class="line"><span class="cl">healthzPort: <span class="m">10248</span>
+</span></span><span class="line"><span class="cl">httpCheckFrequency: 0s
+</span></span><span class="line"><span class="cl">imageMinimumGCAge: 0s
+</span></span><span class="line"><span class="cl">kind: KubeletConfiguration
+</span></span><span class="line"><span class="cl">logging: <span class="o">{}</span>
+</span></span><span class="line"><span class="cl">memorySwap: <span class="o">{}</span>
+</span></span><span class="line"><span class="cl">nodeStatusReportFrequency: 0s
+</span></span><span class="line"><span class="cl">nodeStatusUpdateFrequency: 0s
+</span></span><span class="line"><span class="cl">resolvConf: /run/systemd/resolve/resolv.conf
+</span></span><span class="line"><span class="cl">rotateCertificates: <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">runtimeRequestTimeout: 0s
+</span></span><span class="line"><span class="cl">shutdownGracePeriod: 0s
+</span></span><span class="line"><span class="cl">shutdownGracePeriodCriticalPods: 0s
+</span></span><span class="line"><span class="cl">staticPodPath: /etc/kubernetes/manifests
+</span></span><span class="line"><span class="cl">streamingConnectionIdleTimeout: 0s
+</span></span><span class="line"><span class="cl">syncFrequency: 0s
+</span></span><span class="line"><span class="cl">volumeStatsAggPeriod: 0s
+</span></span><span class="line"><span class="cl">root@master1:~#
+</span></span></code></pre></td></tr></table>
+</div>
+</div><!-- raw HTML omitted -->
+<p>下载镜像</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">kubeadm config images pull --config kubeadm.yaml
+</span></span><span class="line"><span class="cl"><span class="c1"># core DNS 会报错，找不到，可以打一个tag</span>
+</span></span><span class="line"><span class="cl">ctr -n k8s.io i pull docker.io/coredns/coredns:1.8.4
+</span></span><span class="line"><span class="cl">ctr -n k8s.io i tag docker.io/coredns/coredns:1.8.4 registry.aliyuncs.com/k8sxio/coredns:v1.8.4
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">kubeadm init --upload-certs --config kubeadm.yaml
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="nginx-ingress">Nginx-Ingress</h1>
+<p>下载地址：<a class="link" href="https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.1/deploy/static/provider/cloud/deploy.yaml"  target="_blank" rel="noopener"
+    >https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.1/deploy/static/provider/cloud/deploy.yaml</a></p>
+<p>让控制器使用主机网络（Deployment）：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">        ports:
+</span></span><span class="line"><span class="cl">        - containerPort: <span class="m">80</span>
+</span></span><span class="line"><span class="cl">          name: http
+</span></span><span class="line"><span class="cl">          hostPort: <span class="m">80</span>          <span class="c1"># 新增加</span>
+</span></span><span class="line"><span class="cl">          protocol: TCP
+</span></span><span class="line"><span class="cl">        - containerPort: <span class="m">443</span>
+</span></span><span class="line"><span class="cl">          name: https
+</span></span><span class="line"><span class="cl">          hostPort: <span class="m">443</span>         <span class="c1"># 新增加</span>
+</span></span><span class="line"><span class="cl">          protocol: TCP
+</span></span><span class="line"><span class="cl">          
+</span></span><span class="line"><span class="cl">    spec:
+</span></span><span class="line"><span class="cl">      hostNetwork: <span class="nb">true</span>         <span class="c1"># 全部使用主机网络</span>
+</span></span><span class="line"><span class="cl">      containers:
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>修改DNS策略：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">    dnsPolicy: ClusterFirstWithHostNet
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>修改国内镜像：</p>
+<pre><code>    image: registry.aliyuncs.com/google_containers/nginx-ingress-controller:v1.3.1
+    
+    image: registry.aliyuncs.com/google_containers/kube-webhook-certgen:v1.3.1
+    
+    image: registry.aliyuncs.com/google_containers/kube-webhook-certgen:v1.3.1
+</code></pre>
+<p>Tomcat测试：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="l">root@OPS:/opt# cat 02-tomcat.yaml </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">tomcat</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">tomcat</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">release</span><span class="p">:</span><span class="w"> </span><span class="l">canary</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">http</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">ajp</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="m">8009</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8009</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">apps/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Deployment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">tomcat-deploy</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">tomcat</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">release</span><span class="p">:</span><span class="w"> </span><span class="l">canary</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">template</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">tomcat</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">release</span><span class="p">:</span><span class="w"> </span><span class="l">canary</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">tomcat</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">tomcat:8.5.34-jre8-alpine</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">IfNotPresent</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">http</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">ajp</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8009</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">networking.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Ingress</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">ingress-myapp</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;nginx&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">www.example.com</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">pathType</span><span class="p">:</span><span class="w">  </span><span class="l">Prefix</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">backend</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">         </span><span class="nt">service</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">           </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">tomcat</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">           </span><span class="nt">port</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>普通的 Service：
+会生成<code>servicename.namespace.svc.cluster.local</code>的域名，会解析到 Service 对应的 ClusterIP 上，在 Pod 之间的调用可以简写成<code>servicename.namespace</code>，
+如果处于同一个命名空间下面​​，甚至可以只写成 ​​servicename​​ 即可访问</p>
+<p>Headless Service：
+无头服务，就是把 clusterIP 设置为 None 的，会被解析为指定 Pod 的 IP 列表，同样还可以通过<code>podname.servicename.namespace.svc.cluster.local</code>访问到具体的某一个 Pod。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/k8s/">K8S</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    <div class="disqus-container">
+    <div id="disqus_thread"></div>
+<script type="application/javascript">
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "hugo-theme-stack" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+<style>
+    .disqus-container {
+        background-color: var(--card-background);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--shadow-l1);
+        padding: var(--card-padding);
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (typeof DISQUS == 'object') {
+            DISQUS.reset({
+                reload: true
+            });
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2020 - 
+        
+        2023 菜菜的运维之路
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.16.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

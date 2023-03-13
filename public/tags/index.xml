@@ -6,7 +6,15 @@
         <description>Recent content in Tags on 菜菜的运维之路</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Thu, 02 Mar 2023 20:52:54 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Mon, 13 Mar 2023 11:51:59 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>K8S</title>
+        <link>https://caizhe.org/tags/k8s/</link>
+        <pubDate>Mon, 13 Mar 2023 11:51:59 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/k8s/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>调优</title>
         <link>https://caizhe.org/tags/%E8%B0%83%E4%BC%98/</link>
         <pubDate>Thu, 02 Mar 2023 20:52:54 +0800</pubDate>
@@ -28,22 +36,6 @@
         <pubDate>Wed, 01 Mar 2023 17:44:11 +0800</pubDate>
         
         <guid>https://caizhe.org/tags/git/</guid>
-        <description></description>
-        </item>
-        <item>
-        <title>docker</title>
-        <link>https://caizhe.org/tags/docker/</link>
-        <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-        
-        <guid>https://caizhe.org/tags/docker/</guid>
-        <description></description>
-        </item>
-        <item>
-        <title>部署</title>
-        <link>https://caizhe.org/tags/%E9%83%A8%E7%BD%B2/</link>
-        <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-        
-        <guid>https://caizhe.org/tags/%E9%83%A8%E7%BD%B2/</guid>
         <description></description>
         </item>
         
