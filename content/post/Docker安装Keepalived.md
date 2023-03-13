@@ -1,8 +1,8 @@
 ---
 title: "Docker安装Keepalived"
-date: 2023-03-13 T20:52:54+08:00
+date: 2023-03-13T17:44:11+08:00
 draft: false
-tags: ["部署","docker"]
+tags: ["快速部署","docker"]
 ---
 
 
