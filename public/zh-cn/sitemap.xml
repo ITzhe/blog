@@ -91,9 +91,15 @@
                 href="https://caizhe.org/categories/"
                 />
   </url><url>
+    <loc>https://caizhe.org/tags/docker/</loc>
+  </url><url>
+    <loc>https://caizhe.org/p/docker%E5%AE%89%E8%A3%85keepalived/</loc>
+  </url><url>
     <loc>https://caizhe.org/links/</loc>
   </url><url>
     <loc>https://caizhe.org/search/</loc>
+  </url><url>
+    <loc>https://caizhe.org/tags/%E9%83%A8%E7%BD%B2/</loc>
   </url><url>
     <loc>https://caizhe.org/%E5%85%B3%E4%BA%8E/</loc>
   </url>
