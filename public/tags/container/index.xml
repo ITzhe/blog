@@ -12,20 +12,63 @@
         <pubDate>Thu, 02 Mar 2023 17:44:11 +0800</pubDate>
         
         <guid>https://caizhe.org/p/containerd%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</guid>
-        <description>&lt;p&gt;拉取镜像&lt;/p&gt;
+        <description>&lt;h2 id=&#34;镜像&#34;&gt;镜像&lt;/h2&gt;
+&lt;p&gt;拉取镜像&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr image pull docker.io/library/nginx:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看镜像&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr image ls -q
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;TAG标签&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr image tag docker.io/library/nginx:latest caizhe.org/library/nginx:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删除镜像&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr images rm caizhe.org/library/nginx:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;挂载镜像到本地目录&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr image mount docker.io/library/nginx:latest /mnt
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;取消挂载&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr image unmount /mnt
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;导出&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr image export nginx.tar.gz docker.io/library/nginx:latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;导入&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr i import nginx.tar.gz
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;解决&lt;code&gt;ctr: content digest sha256:xxxxxx not found&lt;/code&gt;的错误&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;8
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
 &lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;ctr image pull docker.io/library/nginx:latest
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;方法1：
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ctr image pull --platform amd64  docker.io/library/nginx:latest 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ctr i &lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; --platform amd64 nginx.tar.gz docker.io/library/nginx:latest
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ctr i import --platform amd64 nginx.tar.gz 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;方法2：
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ctr i pull --all-platforms docker.io/library/nginx:latest
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ctr i &lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; --all-platforms nginx.tar.gz docker.io/library/nginx:latest
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ctr i import nginx.tar.gz
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;查看容器&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;ctr image ls -q
-&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;&lt;h2 id=&#34;容器&#34;&gt;容器&lt;/h2&gt;
 &lt;p&gt;&lt;strong&gt;创建&lt;/strong&gt;容器&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;ctr c create docker.io/library/nginx:latest nginx
+&lt;pre&gt;&lt;code&gt;ctr container create docker.io/library/nginx:latest nginx
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看容器&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr container ls
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删除容器&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr container rm nginx
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;&lt;strong&gt;启动&lt;/strong&gt;容器&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;ctr task start -d nginx
@@ -45,6 +88,21 @@
 &lt;p&gt;暂停容器&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;ctr task pause nginx
 &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看容器资源使用情况&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr task metrics nginx
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;名称空间&#34;&gt;名称空间&lt;/h2&gt;
+&lt;p&gt;查看名称空间&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr ns ls
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;创建名称空间&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr ns create test
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删除名称空间&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ctr ns rm test
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;p&gt;提示：docker的名称空间是moby，k8s的名称空间是k8s.io&lt;/p&gt;
 </description>
         </item>
         <item>

@@ -6,7 +6,23 @@
         <description>Recent content in Tags on 菜菜的运维之路</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Mon, 13 Mar 2023 11:51:59 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Mon, 13 Mar 2023 17:44:11 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>docker</title>
+        <link>https://caizhe.org/tags/docker/</link>
+        <pubDate>Mon, 13 Mar 2023 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/docker/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>快速部署</title>
+        <link>https://caizhe.org/tags/%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2/</link>
+        <pubDate>Mon, 13 Mar 2023 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>K8S</title>
         <link>https://caizhe.org/tags/k8s/</link>
         <pubDate>Mon, 13 Mar 2023 11:51:59 +0800</pubDate>

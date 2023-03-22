@@ -12,7 +12,7 @@
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 [root@59-139 ~]# docker run -d --net=host --cap-add NET_ADMIN \ -e KEEPALIVED_AUTOCONF=true \ # 角色 \ -e KEEPALIVED_STATE=MASTER \ # 绑定的网卡 \ -e KEEPALIVED_INTERFACE=ens33 \ # keep alive 通讯的标识ID \ -e KEEPALIVED_VIRTUAL_ROUTER_ID=2 \ # 广播地址 \ -e KEEPALIVED_UNICAST_SRC_IP=192.168.59.139 \ -e KEEPALIVED_UNICAST_PEER_0=192.168.59.140 \ # 绑定的网卡 \ -e KEEPALIVED_TRACK_INTERFACE_1=ens33 \ # 虚拟VIP \ -e KEEPALIVED_VIRTUAL_IPADDRESS_1=&amp;#34;192.168.59.100/24 dev ens33&amp;#34; \ arcts/keepalived 从节点：'>
 <meta property='og:url' content='https://caizhe.org/p/docker%E5%AE%89%E8%A3%85keepalived/'>
 <meta property='og:site_name' content='菜菜的运维之路'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='部署' /><meta property='article:tag' content='docker' />
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='快速部署' /><meta property='article:tag' content='docker' /><meta property='article:published_time' content='2023-03-13T17:44:11&#43;08:00'/><meta property='article:modified_time' content='2023-03-13T17:44:11&#43;08:00'/>
 <meta name="twitter:title" content="Docker安装Keepalived">
 <meta name="twitter:description" content="主节点：
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 [root@59-139 ~]# docker run -d --net=host --cap-add NET_ADMIN \ -e KEEPALIVED_AUTOCONF=true \ # 角色 \ -e KEEPALIVED_STATE=MASTER \ # 绑定的网卡 \ -e KEEPALIVED_INTERFACE=ens33 \ # keep alive 通讯的标识ID \ -e KEEPALIVED_VIRTUAL_ROUTER_ID=2 \ # 广播地址 \ -e KEEPALIVED_UNICAST_SRC_IP=192.168.59.139 \ -e KEEPALIVED_UNICAST_PEER_0=192.168.59.140 \ # 绑定的网卡 \ -e KEEPALIVED_TRACK_INTERFACE_1=ens33 \ # 虚拟VIP \ -e KEEPALIVED_VIRTUAL_IPADDRESS_1=&amp;#34;192.168.59.100/24 dev ens33&amp;#34; \ arcts/keepalived 从节点：">
@@ -274,6 +274,19 @@
     
     <footer class="article-time">
         
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Mar 13, 2023</time>
+            </div>
+        
 
         
             <div>
@@ -378,7 +391,7 @@
     
     <section class="article-tags">
         
-            <a href="/tags/%E9%83%A8%E7%BD%B2/">部署</a>
+            <a href="/tags/%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2/">快速部署</a>
         
             <a href="/tags/docker/">docker</a>
         
