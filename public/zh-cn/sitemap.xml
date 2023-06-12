@@ -2,13 +2,34 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://caizhe.org/p/kubernetesapi%E8%B0%83%E7%94%A8%E6%96%B9%E6%B3%95/</loc>
+    <lastmod>2023-06-12T18:26:20+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/post/</loc>
+    <lastmod>2023-06-12T18:26:20+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/</loc>
+    <lastmod>2023-06-12T18:26:20+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://caizhe.org/en/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ar"
+                href="https://caizhe.org/ar/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh-cn"
+                href="https://caizhe.org/"
+                />
+  </url><url>
     <loc>https://caizhe.org/tags/docker/</loc>
     <lastmod>2023-03-13T17:44:11+08:00</lastmod>
   </url><url>
     <loc>https://caizhe.org/p/docker%E5%AE%89%E8%A3%85keepalived/</loc>
-    <lastmod>2023-03-13T17:44:11+08:00</lastmod>
-  </url><url>
-    <loc>https://caizhe.org/post/</loc>
     <lastmod>2023-03-13T17:44:11+08:00</lastmod>
   </url><url>
     <loc>https://caizhe.org/tags/</loc>
@@ -27,24 +48,6 @@
                 rel="alternate"
                 hreflang="zh-cn"
                 href="https://caizhe.org/tags/"
-                />
-  </url><url>
-    <loc>https://caizhe.org/</loc>
-    <lastmod>2023-03-13T17:44:11+08:00</lastmod>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://caizhe.org/en/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="ar"
-                href="https://caizhe.org/ar/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="zh-cn"
-                href="https://caizhe.org/"
                 />
   </url><url>
     <loc>https://caizhe.org/tags/%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2/</loc>

@@ -6,7 +6,15 @@
         <description>Recent content in Posts on 菜菜的运维之路</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Mon, 13 Mar 2023 17:44:11 +0800</lastBuildDate><atom:link href="https://caizhe.org/post/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Mon, 12 Jun 2023 18:26:20 +0800</lastBuildDate><atom:link href="https://caizhe.org/post/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>KubernetesApi调用方法</title>
+        <link>https://caizhe.org/p/kubernetesapi%E8%B0%83%E7%94%A8%E6%96%B9%E6%B3%95/</link>
+        <pubDate>Mon, 12 Jun 2023 18:26:20 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/kubernetesapi%E8%B0%83%E7%94%A8%E6%96%B9%E6%B3%95/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>Docker安装Keepalived</title>
         <link>https://caizhe.org/p/docker%E5%AE%89%E8%A3%85keepalived/</link>
         <pubDate>Mon, 13 Mar 2023 17:44:11 +0800</pubDate>
