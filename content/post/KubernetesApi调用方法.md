@@ -2,6 +2,7 @@
 title: "KubernetesApi调用方法"
 date: 2023-06-13T10:51:32+08:00
 draft: false
+tags: ["K8S"]
 ---
 
 apiserver调用分为3种：
