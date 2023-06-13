@@ -1,5 +1,5 @@
 ---
-title: "KubernetesApi调用方法"
+dtitle: "KubernetesApi调用方法"
 date: 2023-06-12T18:26:20+08:00
 draft: false
 tags: "K8S"
