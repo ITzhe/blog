@@ -2,17 +2,17 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://caizhe.org/tags/k8s/</loc>
-    <lastmod>2023-06-13T10:51:32+08:00</lastmod>
+    <loc>https://caizhe.org/tags/docker/</loc>
+    <lastmod>2023-06-14T14:29:17+08:00</lastmod>
   </url><url>
-    <loc>https://caizhe.org/p/kubernetesapi%E8%B0%83%E7%94%A8%E6%96%B9%E6%B3%95/</loc>
-    <lastmod>2023-06-13T10:51:32+08:00</lastmod>
+    <loc>https://caizhe.org/p/docker%E5%AE%89%E8%A3%85redis-cluster/</loc>
+    <lastmod>2023-06-14T14:29:17+08:00</lastmod>
   </url><url>
     <loc>https://caizhe.org/post/</loc>
-    <lastmod>2023-06-13T10:51:32+08:00</lastmod>
+    <lastmod>2023-06-14T14:29:17+08:00</lastmod>
   </url><url>
     <loc>https://caizhe.org/tags/</loc>
-    <lastmod>2023-06-13T10:51:32+08:00</lastmod>
+    <lastmod>2023-06-14T14:29:17+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -30,7 +30,7 @@
                 />
   </url><url>
     <loc>https://caizhe.org/</loc>
-    <lastmod>2023-06-13T10:51:32+08:00</lastmod>
+    <lastmod>2023-06-14T14:29:17+08:00</lastmod>
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
@@ -47,8 +47,11 @@
                 href="https://caizhe.org/"
                 />
   </url><url>
-    <loc>https://caizhe.org/tags/docker/</loc>
-    <lastmod>2023-03-13T17:44:11+08:00</lastmod>
+    <loc>https://caizhe.org/tags/k8s/</loc>
+    <lastmod>2023-06-13T10:51:32+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/p/kubernetesapi%E8%B0%83%E7%94%A8%E6%96%B9%E6%B3%95/</loc>
+    <lastmod>2023-06-13T10:51:32+08:00</lastmod>
   </url><url>
     <loc>https://caizhe.org/p/docker%E5%AE%89%E8%A3%85keepalived/</loc>
     <lastmod>2023-03-13T17:44:11+08:00</lastmod>
