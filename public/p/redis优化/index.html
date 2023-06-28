@@ -28,7 +28,7 @@ requirepass XXXXXX绑定地址
 bind 10.'>
 <meta property='og:url' content='https://caizhe.org/p/redis%E4%BC%98%E5%8C%96/'>
 <meta property='og:site_name' content='菜菜的运维之路'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='调优' /><meta property='article:published_time' content='2023-03-02T20:52:54&#43;08:00'/><meta property='article:modified_time' content='2023-03-02T20:52:54&#43;08:00'/>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='调优' /><meta property='article:published_time' content='2017-03-02T20:52:54&#43;08:00'/><meta property='article:modified_time' content='2017-03-02T20:52:54&#43;08:00'/>
 <meta name="twitter:title" content="Redis优化">
 <meta name="twitter:description" content="Redis 持久化方式 Redis 提供了多种不同级别的持久化方式：
 RDB 持久化可以在指定的时间间隔内生成数据集的时间点快照（point-in-time snapshot）。AOF AOF 持久化记录服务器执行的所有写操作命令，并在服务器启动时，通过重新执行这些命令来还原数据集。	Redis 还可以同时使用 AOF 持久化和 RDB 持久化。 在这种情况下， 当 Redis 重启时， 它会优先使用 AOF 文件来还原数据集， 因为 AOF 文件保存的数据集通常比 RDB 文件所保存的数据集更完整。
@@ -340,7 +340,7 @@ bind 10.">
   <path d="M3 11h16" />
   <path d="M18 16.496v1.504l1 1" />
 </svg>
-                <time class="article-time--published">Mar 02, 2023</time>
+                <time class="article-time--published">Mar 02, 2017</time>
             </div>
         
 
@@ -432,7 +432,8 @@ save 60 10000
 allkeys-lru：使用LRU算法进行数据淘汰，所有的key都可以被淘汰
 volatile-random：随机淘汰数据，只淘汰设定了有效期的key
 allkeys-random：随机淘汰数据，所有的key都可以被淘汰
-volatile-ttl：淘汰剩余有效期最短的key</code></pre>
+volatile-ttl：淘汰剩余有效期最短的key
+</code></pre>
 
 </section>
 

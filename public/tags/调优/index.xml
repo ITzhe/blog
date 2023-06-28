@@ -6,10 +6,10 @@
         <description>Recent content in 调优 on 菜菜的运维之路</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Thu, 02 Mar 2023 20:52:54 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/%E8%B0%83%E4%BC%98/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Thu, 02 Mar 2017 20:52:54 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/%E8%B0%83%E4%BC%98/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>Redis优化</title>
         <link>https://caizhe.org/p/redis%E4%BC%98%E5%8C%96/</link>
-        <pubDate>Thu, 02 Mar 2023 20:52:54 +0800</pubDate>
+        <pubDate>Thu, 02 Mar 2017 20:52:54 +0800</pubDate>
         
         <guid>https://caizhe.org/p/redis%E4%BC%98%E5%8C%96/</guid>
         <description>&lt;h1 id=&#34;redis-持久化方式&#34;&gt;Redis 持久化方式&lt;/h1&gt;
@@ -74,13 +74,14 @@ save 60 10000
 allkeys-lru：使用LRU算法进行数据淘汰，所有的key都可以被淘汰
 volatile-random：随机淘汰数据，只淘汰设定了有效期的key
 allkeys-random：随机淘汰数据，所有的key都可以被淘汰
-volatile-ttl：淘汰剩余有效期最短的key&lt;/code&gt;&lt;/pre&gt;
+volatile-ttl：淘汰剩余有效期最短的key
+&lt;/code&gt;&lt;/pre&gt;
 </description>
         </item>
         <item>
         <title>linux系统优化</title>
         <link>https://caizhe.org/p/linux%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96/</link>
-        <pubDate>Thu, 02 Mar 2023 20:49:41 +0800</pubDate>
+        <pubDate>Wed, 02 Mar 2016 20:49:41 +0800</pubDate>
         
         <guid>https://caizhe.org/p/linux%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96/</guid>
         <description>&lt;h1 id=&#34;系统优化&#34;&gt;系统优化&lt;/h1&gt;
@@ -153,7 +154,7 @@ volatile-ttl：淘汰剩余有效期最短的key&lt;/code&gt;&lt;/pre&gt;
         <item>
         <title>Nginx优化</title>
         <link>https://caizhe.org/p/nginx%E4%BC%98%E5%8C%96/</link>
-        <pubDate>Thu, 02 Mar 2023 20:46:18 +0800</pubDate>
+        <pubDate>Wed, 02 Mar 2016 20:46:18 +0800</pubDate>
         
         <guid>https://caizhe.org/p/nginx%E4%BC%98%E5%8C%96/</guid>
         <description>&lt;p&gt;nginx 的优化分为两个小方向：性能优化 &amp;amp; 安全优化&lt;/p&gt;
