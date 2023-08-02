@@ -278,6 +278,10 @@
   <ol>
     <li><a href="#测试">测试</a></li>
   </ol>
+
+  <ol>
+    <li><a href="#过期提醒">过期提醒</a></li>
+  </ol>
 </nav>
         </div>
     </section>
@@ -333,7 +337,7 @@
 
 
                 <time class="article-time--reading">
-                    阅读时长: 4 分钟
+                    阅读时长: 5 分钟
                 </time>
             </div>
         
@@ -872,18 +876,54 @@
 </span><span class="lnt"> 9
 </span><span class="lnt">10
 </span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
 </span></code></pre></td>
 <td class="lntd">
 <pre tabindex="0" class="chroma"><code class="language-php" data-lang="php"><span class="line"><span class="cl"><span class="nx">cat</span> <span class="nx">config</span><span class="o">.</span><span class="nx">inc</span><span class="o">.</span><span class="nx">php</span>
-</span></span><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span> <span class="c1">// My SSP configuration
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$keyphrase</span> <span class="o">=</span> <span class="s2">&#34;mysecret&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$keyphrase</span> <span class="o">=</span> <span class="s2">&#34;mysecret&#34;</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="nv">$debug</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="nv">$use_captcha</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="nv">$ldap_url</span> <span class="o">=</span> <span class="s2">&#34;ldap://192.168.1.250:389&#34;</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="nv">$ldap_binddn</span> <span class="o">=</span> <span class="s2">&#34;CN=admin,DC=caizhe,DC=org&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$ldap_binddn</span> <span class="o">=</span> <span class="s2">&#34;CN=admin,DC=innovsharing,DC=com&#34;</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="nv">$ldap_bindpw</span> <span class="o">=</span> <span class="s2">&#34;111111&#34;</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="nv">$ldap_base</span> <span class="o">=</span> <span class="s2">&#34;dc=caizhe,dc=org&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$ldap_base</span> <span class="o">=</span> <span class="s2">&#34;dc=innovsharing,dc=com&#34;</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="nv">$ldap_filter</span> <span class="o">=</span> <span class="s2">&#34;(&amp;(objectClass=inetOrgPerson)(cn={login}))&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$use_sms</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$use_questions</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">$who_change_password</span> <span class="o">=</span> <span class="s2">&#34;user&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$show_extended_error</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$pwd_show_policy_pos</span> <span class="o">=</span> <span class="s2">&#34;above&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$pwd_show_policy</span> <span class="o">=</span> <span class="s2">&#34;always&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#$pwd_no_reuse = true;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="c1">#$ldap_use_exop_passwd = true;
+</span></span></span><span class="line"><span class="cl"><span class="c1">#$ldap_use_ppolicy_control = true;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$pwd_min_lower</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$pwd_min_upper</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$pwd_min_digit</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$pwd_min_length</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#$pwd_max_length = 16;
+</span></span></span><span class="line"><span class="cl"><span class="c1">#$hash = &#34;MD5&#34;;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
 </span></span><span class="line"><span class="cl"><span class="cp">?&gt;</span><span class="err">
 </span></span></span></code></pre></td></tr></table>
 </div>
@@ -891,9 +931,129 @@
 <pre><code>docker run -p 9080:80  --restart=always --name selfServicePassword -v $PWD/config.inc.php:/var/www/conf/config.inc.local.php -itd docker.io/ltbproject/self-service-password:1.5
 </code></pre>
 <p>直接修改密码即可</p>
+<p><img src="https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/0230802163132.png"
+	
+	
+	
+	loading="lazy"
+	
+	
+></p>
 <!-- raw HTML omitted -->
-<!-- raw HTML omitted -->
-<hr>
+<h2 id="过期提醒">过期提醒</h2>
+<p>SSP 可以改密码很方便，但是有一个弊端：</p>
+<p>1、过期之前没有提醒；</p>
+<p>2、无法修改已经过期的密码（AD可以，但openldap一直提示密码错误）</p>
+<p>编写一个脚本，完成以上功能：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">LDAP_HOSTURI</span><span class="o">=</span><span class="s2">&#34;ldap://192.168.1.250:389&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LDAP_ROOTDN</span><span class="o">=</span><span class="s2">&#34;cn=admin,dc=innovsharing,dc=com&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LDAP_ROOTPW</span><span class="o">=</span><span class="s2">&#34;111111&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LDAP_SEARCHBASEDN</span><span class="o">=</span><span class="s2">&#34;dc=innovsharing,dc=com&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LDAP_SEARCHFILTER</span><span class="o">=</span><span class="s2">&#34;(&amp;(cn=*)(objectClass=inetOrgPerson))&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LDAP_SEARCHCOMM</span><span class="o">=</span><span class="s2">&#34;ldapsearch -x -H </span><span class="si">${</span><span class="nv">LDAP_HOSTURI</span><span class="si">}</span><span class="s2"> -D </span><span class="si">${</span><span class="nv">LDAP_ROOTDN</span><span class="si">}</span><span class="s2"> -LLL -w </span><span class="si">${</span><span class="nv">LDAP_ROOTPW</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">LDAP_SEARCHFILTER</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">EXPIRE_DAY</span><span class="o">=</span>165		<span class="c1"># ldap 设置了180天过期，提前15天（第165天）发出邮件提醒</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="si">${</span><span class="nv">LDAP_SEARCHCOMM</span><span class="si">}</span> -b <span class="si">${</span><span class="nv">LDAP_SEARCHBASEDN</span><span class="si">}</span> dn<span class="p">|</span>awk <span class="s1">&#39;{print $2}&#39;</span> &gt; /tmp/1.log
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">for</span> i in <span class="sb">`</span>cat /tmp/1.log<span class="sb">`</span>
+</span></span><span class="line"><span class="cl"><span class="k">do</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">echo</span> <span class="nv">$i</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">ModifyTime</span><span class="o">=</span><span class="sb">`</span><span class="si">${</span><span class="nv">LDAP_SEARCHCOMM</span><span class="si">}</span> -b <span class="nv">$i</span> +<span class="p">|</span>grep modifyTimestamp<span class="p">|</span>awk <span class="s1">&#39;{print $NF}&#39;</span><span class="p">|</span>cut -c1-8<span class="sb">`</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">ModifyTime</span><span class="o">=</span><span class="k">$(</span>date -d <span class="s2">&#34;</span><span class="si">${</span><span class="nv">ModifyTime</span><span class="si">}</span><span class="s2">&#34;</span> +%s<span class="k">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">echo</span> <span class="si">${</span><span class="nv">ModifyTime</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">NowTime</span><span class="o">=</span><span class="k">$(</span>date +%s<span class="k">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nv">diff</span><span class="o">=</span><span class="k">$((</span> <span class="o">(</span>NowTime <span class="o">-</span> ModifyTime<span class="o">)</span> <span class="o">/</span> <span class="m">86400</span> <span class="k">))</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">echo</span> <span class="si">${</span><span class="nv">diff</span><span class="si">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="o">((</span> <span class="si">${</span><span class="nv">diff</span><span class="si">}</span> &gt; <span class="si">${</span><span class="nv">EXPIRE_DAY</span><span class="p"> ))
+</span></span></span><span class="line"><span class="cl"><span class="p">        then
+</span></span></span><span class="line"><span class="cl"><span class="p">           echo </span><span class="s2">&#34;exipire&#34;</span><span class="p">
+</span></span></span><span class="line"><span class="cl"><span class="p">           Mail=</span><span class="sb">`</span><span class="si">${</span><span class="nv">LDAP_SEARCHCOMM</span><span class="si">}</span> -b <span class="nv">$i</span> mail <span class="p">|</span>grep mail<span class="p">|</span>awk <span class="s1">&#39;{print $2}&#39;</span><span class="sb">`</span><span class="p">
+</span></span></span><span class="line"><span class="cl"><span class="p">           echo </span><span class="s2">&#34;Hi,Please change your password. It will expire.&#34;</span><span class="p"> | mail -s </span><span class="s2">&#34;Accont expire warning&#34;</span><span class="p"> </span><span class="si">${</span><span class="nv">mail</span><span class="si">}</span><span class="p">
+</span></span></span><span class="line"><span class="cl"><span class="p">        else
+</span></span></span><span class="line"><span class="cl"><span class="p">           echo </span><span class="s2">&#34;no exipire&#34;</span><span class="p">
+</span></span></span><span class="line"><span class="cl"><span class="p">        fi
+</span></span></span><span class="line"><span class="cl"><span class="p">done
+</span></span></span><span class="line"><span class="cl"><span class="p">rm -f /tmp/1.log
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>放到定时任务，每天执行一遍</p>
+<p>需要安装一些基础命令（mail、gawk、ssmtp）</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">apt install mailutils gawk ssmtp
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>填写邮箱配置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">vim /etc/ssmtp/ssmtp.conf
+</span></span><span class="line"><span class="cl"><span class="nv">root</span><span class="o">=</span>xxx@innovsharing.com
+</span></span><span class="line"><span class="cl"><span class="nv">mailhub</span><span class="o">=</span>smtp.exmail.qq.com:465
+</span></span><span class="line"><span class="cl"><span class="nv">AuthUser</span><span class="o">=</span>xxx@innovsharing.com
+</span></span><span class="line"><span class="cl"><span class="nv">AuthPass</span><span class="o">=</span>xxxxxxx
+</span></span><span class="line"><span class="cl"><span class="nv">UseTLS</span><span class="o">=</span>Yes
+</span></span><span class="line"><span class="cl">-------------------------
+</span></span><span class="line"><span class="cl">vim /etc/ssmtp/revaliases
+</span></span><span class="line"><span class="cl">root:xxx@innovsharing.com:smtp.exmail.qq.com:465
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>发送邮件确认一下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"> <span class="nb">echo</span> <span class="s2">&#34;nei rong&#34;</span> <span class="p">|</span> mail -s <span class="s2">&#34;zhu ti&#34;</span> xxxxxxx@qq.com
+</span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
 <p>参考链接：</p>
 <p><a class="link" href="https://www.openldap.org/devel/admin/overlays.html"  target="_blank" rel="noopener"
     >https://www.openldap.org/devel/admin/overlays.html</a>   </p>

@@ -278,15 +278,33 @@ Additional info: Password fails quality checking policy
 
 ```php 
 cat config.inc.php
-<?php // My SSP configuration
+<?php
 $keyphrase = "mysecret";
 $debug = false;
 $use_captcha = true;
 $ldap_url = "ldap://192.168.1.250:389";
-$ldap_binddn = "CN=admin,DC=caizhe,DC=org";
+$ldap_binddn = "CN=admin,DC=innovsharing,DC=com";
 $ldap_bindpw = "111111";
-$ldap_base = "dc=caizhe,dc=org";
+$ldap_base = "dc=innovsharing,dc=com";
 $ldap_filter = "(&(objectClass=inetOrgPerson)(cn={login}))";
+$use_sms = false;
+$use_questions = false;
+
+$who_change_password = "user";
+$show_extended_error = true;
+$pwd_show_policy_pos = "above";
+$pwd_show_policy = "always";
+#$pwd_no_reuse = true;
+
+#$ldap_use_exop_passwd = true;
+#$ldap_use_ppolicy_control = true;
+$pwd_min_lower = 1;
+$pwd_min_upper = 1;
+$pwd_min_digit = 1;
+$pwd_min_length = 8;
+#$pwd_max_length = 16;
+#$hash = "MD5";
+
 ?>
 ```
 运行新的容器
@@ -295,9 +313,82 @@ $ldap_filter = "(&(objectClass=inetOrgPerson)(cn={login}))";
 
 直接修改密码即可
 
-<img src="https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/20230728190552.png" style="zoom:50%;" />
+![](https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/0230802163132.png)
 
 <img src="https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/20230728190552.png" style="zoom:50%;" />
+
+## 过期提醒 
+
+SSP 可以改密码很方便，但是有一个弊端：
+
+1、过期之前没有提醒；
+
+2、无法修改已经过期的密码（AD可以，但openldap一直提示密码错误）
+
+编写一个脚本，完成以上功能：
+
+``` bash
+LDAP_HOSTURI="ldap://192.168.1.250:389"
+LDAP_ROOTDN="cn=admin,dc=innovsharing,dc=com"
+LDAP_ROOTPW="111111"
+LDAP_SEARCHBASEDN="dc=innovsharing,dc=com"
+LDAP_SEARCHFILTER="(&(cn=*)(objectClass=inetOrgPerson))"
+LDAP_SEARCHCOMM="ldapsearch -x -H ${LDAP_HOSTURI} -D ${LDAP_ROOTDN} -LLL -w ${LDAP_ROOTPW} ${LDAP_SEARCHFILTER}"
+EXPIRE_DAY=165		# ldap 设置了180天过期，提前15天（第165天）发出邮件提醒
+
+${LDAP_SEARCHCOMM} -b ${LDAP_SEARCHBASEDN} dn|awk '{print $2}' > /tmp/1.log
+
+for i in `cat /tmp/1.log`
+do
+        echo $i
+        ModifyTime=`${LDAP_SEARCHCOMM} -b $i +|grep modifyTimestamp|awk '{print $NF}'|cut -c1-8`
+        ModifyTime=$(date -d "${ModifyTime}" +%s)
+        echo ${ModifyTime}
+        NowTime=$(date +%s)
+        diff=$(( (NowTime - ModifyTime) / 86400 ))
+        echo ${diff}
+        if (( ${diff} > ${EXPIRE_DAY ))
+        then
+           echo "exipire"
+           Mail=`${LDAP_SEARCHCOMM} -b $i mail |grep mail|awk '{print $2}'`
+           echo "Hi,Please change your password. It will expire." | mail -s "Accont expire warning" ${mail}
+        else
+           echo "no exipire"
+        fi
+done
+rm -f /tmp/1.log
+
+```
+
+放到定时任务，每天执行一遍
+
+需要安装一些基础命令（mail、gawk、ssmtp）
+
+``` shell
+apt install mailutils gawk ssmtp
+```
+
+填写邮箱配置
+
+``` shell
+vim /etc/ssmtp/ssmtp.conf
+root=xxx@innovsharing.com
+mailhub=smtp.exmail.qq.com:465
+AuthUser=xxx@innovsharing.com
+AuthPass=xxxxxxx
+UseTLS=Yes
+-------------------------
+vim /etc/ssmtp/revaliases
+root:xxx@innovsharing.com:smtp.exmail.qq.com:465
+```
+
+发送邮件确认一下
+
+```bash
+ echo "nei rong" | mail -s "zhu ti" xxxxxxx@qq.com
+```
+
+
 
 ***
 
