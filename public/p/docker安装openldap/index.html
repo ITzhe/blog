@@ -337,7 +337,7 @@
 
 
                 <time class="article-time--reading">
-                    阅读时长: 5 分钟
+                    阅读时长: 6 分钟
                 </time>
             </div>
         
@@ -894,13 +894,57 @@
 </span><span class="lnt">27
 </span><span class="lnt">28
 </span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-php" data-lang="php"><span class="line"><span class="cl"><span class="nx">cat</span> <span class="nx">config</span><span class="o">.</span><span class="nx">inc</span><span class="o">.</span><span class="nx">php</span>
-</span></span><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span>
-</span></span><span class="line"><span class="cl"><span class="nv">$keyphrase</span> <span class="o">=</span> <span class="s2">&#34;mysecret&#34;</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="nv">$debug</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="nv">$use_captcha</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+<pre tabindex="0" class="chroma"><code class="language-php" data-lang="php"><span class="line"><span class="cl"><span class="o">&lt;?</span><span class="nx">php</span> <span class="c1">// My SSP configuration
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$keyphrase</span> <span class="o">=</span> <span class="s2">&#34;mysecret&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$debug</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$use_captcha</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="nv">$ldap_url</span> <span class="o">=</span> <span class="s2">&#34;ldap://192.168.1.250:389&#34;</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="nv">$ldap_binddn</span> <span class="o">=</span> <span class="s2">&#34;CN=admin,DC=innovsharing,DC=com&#34;</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="nv">$ldap_bindpw</span> <span class="o">=</span> <span class="s2">&#34;111111&#34;</span><span class="p">;</span>
@@ -917,20 +961,66 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>
 </span></span><span class="line"><span class="cl"><span class="c1">#$ldap_use_exop_passwd = true;
 </span></span></span><span class="line"><span class="cl"><span class="c1">#$ldap_use_ppolicy_control = true;
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$pwd_min_lower</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="nv">$pwd_min_upper</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="nv">$pwd_min_digit</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="nv">$pwd_min_length</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1">#$pwd_min_lower = 1;
+</span></span></span><span class="line"><span class="cl"><span class="c1">#$pwd_min_upper = 1;
+</span></span></span><span class="line"><span class="cl"><span class="c1">#$pwd_min_digit = 1;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$pwd_min_length</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="c1">#$pwd_max_length = 16;
 </span></span></span><span class="line"><span class="cl"><span class="c1">#$hash = &#34;MD5&#34;;
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">## Token
+</span></span></span><span class="line"><span class="cl"><span class="c1"># Use tokens?
+</span></span></span><span class="line"><span class="cl"><span class="c1"># true (default)
+</span></span></span><span class="line"><span class="cl"><span class="c1"># false
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$use_tokens</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Crypt tokens?
+</span></span></span><span class="line"><span class="cl"><span class="c1"># true (default)
+</span></span></span><span class="line"><span class="cl"><span class="c1"># false
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$crypt_tokens</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Token lifetime in seconds
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$token_lifetime</span> <span class="o">=</span> <span class="s2">&#34;3600&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">## Mail
+</span></span></span><span class="line"><span class="cl"><span class="c1"># LDAP mail attribute
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$mail_attributes</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span> <span class="s2">&#34;mail&#34;</span><span class="p">,</span> <span class="s2">&#34;gosaMailAlternateAddress&#34;</span><span class="p">,</span> <span class="s2">&#34;proxyAddresses&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Get mail address directly from LDAP (only first mail entry)
+</span></span></span><span class="line"><span class="cl"><span class="c1"># and hide mail input field
+</span></span></span><span class="line"><span class="cl"><span class="c1"># default = false
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$mail_address_use_ldap</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Who the email should come from
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$mail_from</span> <span class="o">=</span> <span class="s2">&#34;xxx@innovsharing.com&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_from_name</span> <span class="o">=</span> <span class="s2">&#34;Self Service Password&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_signature</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Notify users anytime their password is changed
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$notify_on_change</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># PHPMailer configuration (see https://github.com/PHPMailer/PHPMailer)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nv">$mail_sendmailpath</span> <span class="o">=</span> <span class="s1">&#39;/usr/sbin/sendmail&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_protocol</span> <span class="o">=</span> <span class="s1">&#39;smtp&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_debug</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_debug_format</span> <span class="o">=</span> <span class="s1">&#39;error_log&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_host</span> <span class="o">=</span> <span class="s1">&#39;smtp.exmail.qq.com&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_auth</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_user</span> <span class="o">=</span> <span class="s1">&#39;xxxxx@innovsharing.com&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_pass</span> <span class="o">=</span> <span class="s1">&#39;xxxxxxxxxxxxx&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_port</span> <span class="o">=</span> <span class="mi">465</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_timeout</span> <span class="o">=</span> <span class="mi">30</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_keepalive</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_secure</span> <span class="o">=</span> <span class="s1">&#39;ssl&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_autotls</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_smtp_options</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_contenttype</span> <span class="o">=</span> <span class="s1">&#39;text/plain&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_wordwrap</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_charset</span> <span class="o">=</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="nv">$mail_priority</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="cp">?&gt;</span><span class="err">
 </span></span></span></code></pre></td></tr></table>
 </div>
 </div><p>运行新的容器</p>
 <pre><code>docker run -p 9080:80  --restart=always --name selfServicePassword -v $PWD/config.inc.php:/var/www/conf/config.inc.local.php -itd docker.io/ltbproject/self-service-password:1.5
 </code></pre>
-<p>直接修改密码即可</p>
+<p>直接修改密码即可(如果忘记密码，可以使用邮箱重置密码)</p>
 <p><img src="https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/0230802163132.png"
 	
 	

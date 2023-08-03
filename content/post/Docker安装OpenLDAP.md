@@ -277,11 +277,10 @@ Additional info: Password fails quality checking policy
 创建一个配置文件
 
 ```php 
-cat config.inc.php
-<?php
+<?php // My SSP configuration
 $keyphrase = "mysecret";
-$debug = false;
-$use_captcha = true;
+$debug = true;
+$use_captcha = false;
 $ldap_url = "ldap://192.168.1.250:389";
 $ldap_binddn = "CN=admin,DC=innovsharing,DC=com";
 $ldap_bindpw = "111111";
@@ -298,12 +297,58 @@ $pwd_show_policy = "always";
 
 #$ldap_use_exop_passwd = true;
 #$ldap_use_ppolicy_control = true;
-$pwd_min_lower = 1;
-$pwd_min_upper = 1;
-$pwd_min_digit = 1;
+#$pwd_min_lower = 1;
+#$pwd_min_upper = 1;
+#$pwd_min_digit = 1;
 $pwd_min_length = 8;
 #$pwd_max_length = 16;
 #$hash = "MD5";
+
+
+## Token
+# Use tokens?
+# true (default)
+# false
+$use_tokens = true;
+# Crypt tokens?
+# true (default)
+# false
+$crypt_tokens = true;
+# Token lifetime in seconds
+$token_lifetime = "3600";
+
+## Mail
+# LDAP mail attribute
+$mail_attributes = array( "mail", "gosaMailAlternateAddress", "proxyAddresses" );
+# Get mail address directly from LDAP (only first mail entry)
+# and hide mail input field
+# default = false
+$mail_address_use_ldap = false;
+# Who the email should come from
+$mail_from = "xxx@innovsharing.com";
+$mail_from_name = "Self Service Password";
+$mail_signature = "";
+# Notify users anytime their password is changed
+$notify_on_change = false;
+# PHPMailer configuration (see https://github.com/PHPMailer/PHPMailer)
+$mail_sendmailpath = '/usr/sbin/sendmail';
+$mail_protocol = 'smtp';
+$mail_smtp_debug = 0;
+$mail_debug_format = 'error_log';
+$mail_smtp_host = 'smtp.exmail.qq.com';
+$mail_smtp_auth = true;
+$mail_smtp_user = 'xxxxx@innovsharing.com';
+$mail_smtp_pass = 'xxxxxxxxxxxxx';
+$mail_smtp_port = 465;
+$mail_smtp_timeout = 30;
+$mail_smtp_keepalive = false;
+$mail_smtp_secure = 'ssl';
+$mail_smtp_autotls = true;
+$mail_smtp_options = array();
+$mail_contenttype = 'text/plain';
+$mail_wordwrap = 0;
+$mail_charset = 'utf-8';
+$mail_priority = 3;
 
 ?>
 ```
@@ -311,7 +356,7 @@ $pwd_min_length = 8;
 
     docker run -p 9080:80  --restart=always --name selfServicePassword -v $PWD/config.inc.php:/var/www/conf/config.inc.local.php -itd docker.io/ltbproject/self-service-password:1.5
 
-直接修改密码即可
+直接修改密码即可(如果忘记密码，可以使用邮箱重置密码)
 
 ![](https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/0230802163132.png)
 
