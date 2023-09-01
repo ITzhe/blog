@@ -57,15 +57,7 @@ params:
 
     sidebar:
         emoji: 🍥
-        subtitle: "十年运维路漫漫，
-辛苦付出不曾闲。
-高效手段成绩显，
-辛苦不再现眼前。
-
-祝愿前程光明美，
-感慨历程酸甜苦。
-依旧是那个你，
-工作愉悦如鱼水。"
+        subtitle: "大道至简，真实而简洁"
         avatar:
             enabled: true
             local: true
@@ -211,11 +203,11 @@ menu:
           params:
               icon: brand-github
 
-        - identifier: twitter
-          name: Twitter
-          url: https://twitter.com
-          params:
-              icon: brand-twitter
+#        - identifier: twitter
+#          name: Twitter
+#          url: https://twitter.com
+#          params:
+#              icon: brand-twitter
 
 related:
     includeNewer: true
