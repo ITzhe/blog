@@ -2,7 +2,7 @@
 title: "Redis优化"
 date: 2017-03-02T20:52:54+08:00
 draft: false
-tags: ["调优"]
+tags: ["调优","Redis"]
 ---
 
 # Redis 持久化方式

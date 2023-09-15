@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Redis on 菜菜的运维之路</title>
+        <link>https://caizhe.org/tags/redis/</link>
+        <description>Recent content in Redis on 菜菜的运维之路</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <lastBuildDate>Thu, 02 Mar 2017 20:52:54 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/redis/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Redis优化</title>
+        <link>https://caizhe.org/p/redis%E4%BC%98%E5%8C%96/</link>
+        <pubDate>Thu, 02 Mar 2017 20:52:54 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/redis%E4%BC%98%E5%8C%96/</guid>
+        <description>&lt;h1 id=&#34;redis-持久化方式&#34;&gt;Redis 持久化方式&lt;/h1&gt;
+&lt;p&gt;Redis 提供了多种不同级别的持久化方式：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;RDB 持久化可以在指定的时间间隔内生成数据集的时间点快照（point-in-time snapshot）。
+
+AOF AOF 持久化记录服务器执行的所有写操作命令，并在服务器启动时，通过重新执行这些命令来还原数据集。	
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Redis 还可以同时使用 AOF 持久化和 RDB 持久化。 在这种情况下， 当 Redis 重启时， 它会优先使用 AOF 文件来还原数据集， 因为 AOF 文件保存的数据集通常比 RDB 文件所保存的数据集更完整。&lt;/p&gt;
+&lt;h2 id=&#34;rdb-优缺点&#34;&gt;RDB 优缺点&lt;/h2&gt;
+&lt;p&gt;优：故障恢复的时候特别快，最大化Redis性能；直接fork一个子进程，之后的所有保存工作全交给子进程；支持的功能更多。&lt;/p&gt;
+&lt;p&gt;缺：如果在未保存快照的时候故障，会丢失部分数据；子进程在fork的时候会非常影响性能；可能会造成客户端连接的停顿。&lt;/p&gt;
+&lt;h2 id=&#34;aof-优缺点&#34;&gt;AOF 优缺点&lt;/h2&gt;
+&lt;p&gt;优：数据相比RDB可能更完整一些，因为是每秒写入一次，最多丢一秒的数据；操作追加到日志文件，可重写；
+持久化记录服务器执行的所有写操作命令，并在服务器启动时，通过重新执行这些命令来还原数据集。新命令会被追加到文件的末尾。
+Redis 还可以在后台对 AOF 文件进行重写（rewrite），使得 AOF 文件的体积不会超出保存数据集状态所需的实际大小。
+（什么是重写：set a 1，set a 2 set a 3，只记录set a 3）&lt;/p&gt;
+&lt;p&gt;缺：体积大于RDB，恢复速度慢于RDB&lt;/p&gt;
+&lt;h1 id=&#34;rrdis-主从原理&#34;&gt;Rrdis 主从原理&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;1、当从库和主库建立MS关系后，会向主数据库发送PSYNC命令；
+2、主库接收到PSYNC命令后会开始在后台保存快照（RDB持久化过程），并将期间接收到的写请求写到缓存区；
+3、当快照完成后，主Redis会将快照文件和所有缓存的写命令发送给从Redis；
+4、从Redis接收到后，会载入快照文件并且执行收到的缓存的命令；
+5、主Redis每当接收到写命令时就会将命令发送从Redis，从而保证数据的一致；
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;redis-优化&#34;&gt;Redis 优化&lt;/h1&gt;
+&lt;p&gt;更改端口&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;port 6379		
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;设置密码&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;requirepass XXXXXX
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;绑定地址&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;bind 10.0.0.10
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;后台运行&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;daemonize yes
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;日志级别&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;loglevel warning
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;日志位置&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;logfile &amp;quot;/var/log/redis_6379.log&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;持久化&lt;/p&gt;
+&lt;p&gt;建议master关闭，slave开启&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;save 900 1
+save 300 10
+save 60 10000                  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;开启只读&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;slave-read-only yes
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;慢查询&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;slowlog-log-slower-than 5000
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;最大内存&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;maxmemory 5gb
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;数据淘汰机制&#34;&gt;数据淘汰机制&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;volatile-lru：使用LRU算法进行数据淘汰（淘汰上次使用时间最早的，且使用次数最少的key），只淘汰设定了有效期的key
+allkeys-lru：使用LRU算法进行数据淘汰，所有的key都可以被淘汰
+volatile-random：随机淘汰数据，只淘汰设定了有效期的key
+allkeys-random：随机淘汰数据，所有的key都可以被淘汰
+volatile-ttl：淘汰剩余有效期最短的key
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

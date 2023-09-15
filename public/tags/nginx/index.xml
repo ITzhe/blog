@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Nginx on 菜菜的运维之路</title>
+        <link>https://caizhe.org/tags/nginx/</link>
+        <description>Recent content in Nginx on 菜菜的运维之路</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <lastBuildDate>Sat, 02 Mar 2019 17:44:11 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/nginx/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Nginx 加斜线的区别</title>
+        <link>https://caizhe.org/p/nginx-%E5%8A%A0%E6%96%9C%E7%BA%BF%E7%9A%84%E5%8C%BA%E5%88%AB/</link>
+        <pubDate>Sat, 02 Mar 2019 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/nginx-%E5%8A%A0%E6%96%9C%E7%BA%BF%E7%9A%84%E5%8C%BA%E5%88%AB/</guid>
+        <description>&lt;p&gt;加斜线分为两种：&lt;/p&gt;
+&lt;p&gt;1、localtion 规则后面加/&lt;/p&gt;
+&lt;p&gt;2、proxy_pass后面加/&lt;/p&gt;
+&lt;p&gt;测试的URL:https://www.xxxx.com/minio/ucenter/imgs/885058fa-dff6-4d60-875d-bb7dd2098ce9.png&lt;/p&gt;
+&lt;p&gt;localtion 第一种情况：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    location /minio/ &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        proxy_pass http://minio/&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;结论：加/或者不加/没有区别。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;第二种情况1：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    location /minio/ &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        proxy_pass http://minio/&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;实际访问的后端地址：127.0.0.1:9000/ucenter/imgs/885058fa-dff6-4d60-875d-bb7dd2098ce9.png&lt;/p&gt;
+&lt;p&gt;第二种情况2：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    location /minio/ &lt;span class=&#34;o&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        proxy_pass http://minio&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;o&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;实际访问的后端地址：127.0.0.1:9000/minio/ucenter/imgs/885058fa-dff6-4d60-875d-bb7dd2098ce9.png&lt;/p&gt;
+&lt;p&gt;结论：proxy_pass 后面加了斜线，会把location部分的路径去掉，反之不加斜线，会保留location部分的路径&lt;/p&gt;
+&lt;hr&gt;
+</description>
+        </item>
+        <item>
+        <title>Nginx优化</title>
+        <link>https://caizhe.org/p/nginx%E4%BC%98%E5%8C%96/</link>
+        <pubDate>Wed, 02 Mar 2016 20:46:18 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/nginx%E4%BC%98%E5%8C%96/</guid>
+        <description>&lt;p&gt;nginx 的优化分为两个小方向：性能优化 &amp;amp; 安全优化&lt;/p&gt;
+&lt;h2 id=&#34;性能优化&#34;&gt;性能优化&lt;/h2&gt;
+&lt;p&gt;开启gzip压缩&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;gzip on;
+gzip_min_length  1k;
+gzip_buffers     4 32k;
+gzip_http_version 1.1;
+gzip_comp_level 2;
+gzip_types  text/css text/js text/xml application/javascript;
+gzip_vary on;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用expires 缓存&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    location ~^/(images|javascript|js|css|flash|media|static)/ {
+      expires 30d;
+    }
+
+	 location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
+	{
+	      expires      3650d;
+	}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用epoll模型&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;use epoll;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;配置多个work进程&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;与CPU的核数相等 or CPU的核数 X2
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调整当进程的最大连接数&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;worker_connections  20480；
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调整进程可打开的的最大文件数&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;worker_rlimit_nofile 65535;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;设置连接超时&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;keepalive_timeout  300;
+
+JAVA应用经量使用长连接、如果是PHP的尽量使用短连接，因为Java应用要消耗的资源和时间要比PHP跟多（具体依然要看业务）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;客户端请求头超时时间/大小&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;client_header_timeout 15s;	
+client_header_buffer_size 10k;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;客户端请求主体超时时间&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;client_header_timeout 15s;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;用户上传大小的限制&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;client_max_body_size        10m;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;开启高效文件传输模式&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;sendfile       on;
+tcp_nopush     on;
+aio            on;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;为后端代理服务器设置缓冲区&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;proxy_buffering on;
+proxy_buffer_size 64k;
+proxy_buffers   4 32k;
+proxy_busy_buffers_size 64k;
+proxy_temp_file_write_size 64k;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;制定客户端的超时时间&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;send_timeout 300s;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;安全优化&#34;&gt;安全优化&lt;/h2&gt;
+&lt;p&gt;隐藏版本号&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;server_tokens off;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;更改默认用户组&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;user    nginx;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;静止解析制定目录下的特定文件&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;location ~ ^/images/.*\.(php|php5|.sh|.pl|.py)$ 
+        { 
+     		 deny all; 
+        } 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;限制及指定IP或IP段访问&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;location / { 
+	deny 192.168.1.1; 
+	allow 192.168.1.0/24; 
+	deny all; 
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;限制非法IP&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;if ($remote_addr = 10.0.0.2 ) {
+	return 403;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;禁止非法域名解析访问&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;if （$host !~ caizhe/.org$）{
+	return 500;
+}
+
+server {
+    listen 80 default;
+    return 500;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;限制访问频率&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;http {	
+limit_req_zone $binary_remote_addr zone=ttlsa_com:10m rate=1r/s;
+
+server {
+limit_req zone=one burst=5;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;错误页面优雅显示&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;error_page   500 501 502 503 504  https://caizhe.org;
+error_page 	 400 403 404 405 408 410 411 412 413 414 415 https://caizhe.org;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用普通用户启动nginx&lt;/p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

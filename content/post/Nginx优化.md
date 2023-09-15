@@ -2,7 +2,7 @@
 title: "Nginx优化"
 date: 2016-03-02T20:46:18+08:00
 draft: false
-tags: ["调优"]
+tags: ["调优","Nginx"]
 ---
 
 nginx 的优化分为两个小方向：性能优化 & 安全优化
