@@ -2272,6 +2272,161 @@ net.bridge.bridge-nf-filter-vlan-tagged：是否在 iptables/arptables 中过滤
 </description>
         </item>
         <item>
+        <title>Glusterfs分布式存储</title>
+        <link>https://caizhe.org/p/glusterfs%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8/</link>
+        <pubDate>Fri, 13 Sep 2019 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/glusterfs%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8/</guid>
+        <description>&lt;p&gt;#volume卷&lt;/p&gt;
+&lt;p&gt;分布式卷（distributed）文件通过hash算法随机分布到bricks组成的卷上&lt;/p&gt;
+&lt;p&gt;复制式卷（replicated）类似raid1，replica数必须等于volume中brick所包含的存储服务器数。&lt;/p&gt;
+&lt;p&gt;条带式卷（striped）类似raid0，strips数必须等于volume中brick所包含的存储服务器数，文件被分布成数据块，以round robin的方式存在bricks中，并发粒度是数据块，大文件性能好。&lt;/p&gt;
+&lt;p&gt;分布式条带卷（distributed striped）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和条带式的功能。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;分布式复制卷&lt;/strong&gt;（distributed replicated）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和复制卷的功能。&lt;/p&gt;
+&lt;p&gt;#分布式卷&lt;/p&gt;
+&lt;p&gt;加入存储池&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage1 ~]# gluster peer probe mystorage2
+peer probe: success. 
+[root@mystorage1 ~]# gluster peer probe mystorage3
+peer probe: success. 
+[root@mystorage1 ~]# gluster peer probe mystorage4
+peer probe: success. 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在其他节点检查&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage4 ~]# gluster peer status
+Number of Peers: 3
+
+Hostname: mystorage1
+Uuid: 429d3353-dbcc-47d7-b3b5-4c3267fa26df
+State: Peer in Cluster (Connected)
+
+Hostname: mystorage3
+Uuid: 7c14cd1f-e801-48ca-8f23-09b017537400
+State: Peer in Cluster (Connected)
+
+Hostname: mystorage2
+Uuid: 14b4575a-2ba3-496b-96ea-9a4fe60819b3
+State: Peer in Cluster (Connected)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;初始化&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install xfsprogs -y
+mkfs.xfs -f /dev/sdb
+mkdir -p /storage/brick1
+mount /dev/sdb /storage/brick1/
+echo &amp;quot;/dev/sdb /storage/brick1/  xfs defaults 0 0&amp;quot; &amp;gt;&amp;gt; /etc/fstab 
+mount -a
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;创建卷（整合磁盘）&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage1 ~]# gluster volume create gv1 mystorage1:/storage/brick1/ mystorage2:/storage/brick1/ force 
+volume create: gv1: success: please start the volume to access data
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;启动卷&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage1 ~]# gluster volume start gv1
+volume start: gv1: success
+[root@mystorage4 ~]# gluster volume gv1 info
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;挂载卷&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage3 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage3 ~]# df -h
+…………
+127.0.0.1:/gv1   20G   65M   20G   1% /mnt
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;把刚才1和2的卷整合在一起之后，共享出来，然后3挂在到gv1种&lt;/p&gt;
+&lt;p&gt;测试&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage4 ~]# mv d4 /mnt/
+[root@mystorage1 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage1 ~]# ls /mnt/
+d4
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;#分布式复制卷&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage2 ~]# gluster volume create gv2 replica 2 mystorage3:/storage/brick1/ mystorage4:/storage/brick1/ force 
+volume create: gv2: success: please start the volume to access data
+
+[root@mystorage2 ~]# gluster volume info gv2
+
+Volume Name: gv2
+Type: Replicate
+Volume ID: 42949fc2-4400-4637-84c7-28aafed7676e
+Status: Created
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: mystorage3:/storage/brick1
+Brick2: mystorage4:/storage/brick1
+Options Reconfigured:
+performance.readdir-ahead: on
+[root@mystorage1 ~]# gluster volume restart gv2
+volume start: gv2: success
+[root@mystorage1 ~]# df -h
+…… ………
+127.0.0.1:/gv1   20G   65M   20G   1% /mnt
+127.0.0.1:/gv2   10G   33M   10G   1% /opt
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;总结：分布巻就像RAID0一样，是一份数据写在了两个地方，把一个数据打散了；而复制卷就像RAID1一样，把一份数据写在了多份。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;mkfs.xfs -f /dev/sdc
+mkdir -p /storage/brick2
+mount /dev/sdc /storage/brick2
+echo &amp;quot;/dev/sdc /storage/brick2/  xfs defaults 0 0&amp;quot; &amp;gt;&amp;gt; /etc/fstab 
+df -h
+#gluster volume create gv3 stripe 2 mystorage3:/storage/brick2/ mystorage4:/storage/brick2 force
+gluster volume start gv3
+mkdir /gv1 /gv2 /gv3
+
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv1 /gv1
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv2 /gv2
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv3 /gv3
+[root@mystorage4 ~]# dd if=/dev/zero bs=1024 count=10000 of=/gv3/10M.file
+[root@mystorage4 ~]# dd if=/dev/zero bs=1024 count=20000 of=/gv3/20M.file
+[root@mystorage4 gv3]# ll -h
+total 30M
+-rw-r--r--. 1 root root 9.8M Dec 27 12:19 10M.file
+-rw-r--r--. 1 root root  20M Dec 27 12:19 20M.file
+[root@mystorage4 gv3]# ll /storage/brick2/ -h
+total 15M
+-rw-r--r--. 2 root root 4.9M Dec 27 12:19 10M.file
+-rw-r--r--. 2 root root 9.8M Dec 27 12:19 20M.file
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;注意看大小&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage3 ~]# mkdir /gv1 /gv2 /gv3
+[root@mystorage3 ~]# mount -t glusterfs 127.0.0.1:gv3 /gv3
+
+[root@mystorage3 ~]# ll /gv3/
+total 30000
+-rw-r--r--. 1 root root 10240000 Dec 27 12:19 10M.file
+-rw-r--r--. 1 root root 20480000 Dec 27 12:19 20M.file
+[root@mystorage3 ~]# ll /storage/brick2/
+total 15032
+-rw-r--r--. 2 root root  5128192 Dec 27 12:19 10M.file
+-rw-r--r--. 2 root root 10256384 Dec 27 12:19 20M.file
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;注意看大小&lt;/p&gt;
+&lt;p&gt;#增加/删除磁盘&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage3 ~]# gluster volume stop gv2
+Stopping volume will make its data inaccessible. Do you want to continue? (y/n) y
+volume stop: gv2: success
+[root@mystorage3 ~]# gluster volume add-brick gv2 replica 2 mystorage1:/storage/brick2/ mystorage2:/storage/brick2 force
+volume add-brick: success
+[root@mystorage3 ~]# gluster volume start gv2
+volume start: gv2: success
+[root@mystorage4 gv3]# umount /gv2
+[root@mystorage4 gv3]# mount -t glusterfs 127.0.0.1:gv2 /gv2
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;扩容之后还需要磁盘平衡，否则是无法再新加入的磁盘中写入数据的&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage4 gv2]# gluster volume rebalance gv2 start	
+[root@mystorage4 gv2]# gluster volume rebalance gv2 status
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;注意：增加的brick必须是存储节点的倍数，例如reolica为2，你增加的数量必须是2 4 6 8 ……&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;gluster volume stop gv2
+gluster volume remove-brick gv2 replica 2 mystorage1:/storage/brick2/ mystorage2:/storage/brick2 force
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;#删除卷
+umoun gv1
+gluster volume stop gv1
+gluster volume delete gv1&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>Archives</title>
         <link>https://caizhe.org/archives/</link>
         <pubDate>Tue, 28 May 2019 00:00:00 +0000</pubDate>
@@ -2334,6 +2489,473 @@ net.bridge.bridge-nf-filter-vlan-tagged：是否在 iptables/arptables 中过滤
 &lt;/div&gt;&lt;p&gt;实际访问的后端地址：127.0.0.1:9000/minio/ucenter/imgs/885058fa-dff6-4d60-875d-bb7dd2098ce9.png&lt;/p&gt;
 &lt;p&gt;结论：proxy_pass 后面加了斜线，会把location部分的路径去掉，反之不加斜线，会保留location部分的路径&lt;/p&gt;
 &lt;hr&gt;
+</description>
+        </item>
+        <item>
+        <title>Bind-DLZ</title>
+        <link>https://caizhe.org/p/bind-dlz/</link>
+        <pubDate>Thu, 02 Aug 2018 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/bind-dlz/</guid>
+        <description>&lt;p&gt;安装依赖：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install openssl-devel -y 
+yum groupinstall &amp;quot;Development Tools&amp;quot; -y
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;数据库安装：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install mariadb-server mariadb-devel -y
+systemctl start mariadb
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删掉一些空用户，否则会报错&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;delete from mysql.user where user=&#39;&#39;;
+create database bind;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;安装bind&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;tar xf bind-9.11.5.tar.gz
+cd bind-9.11.5/
+./configure --with-dlz-mysql --enable-largefile --enable-threads=no --prefix=/usr/local/bind --with-openssl 
+# 我试了开线程，但是会报错，所以还是单进程，对DNS的查询操作都是在从库，主库只负责写入和修改操作然后同步到从库，从库直接使用dns的配置文件，所以效率并不影响
+make -j 4
+make install
+groupadd -r named
+useradd -s /sbin/nologin -M -r -g named named
+chown -R named:named /usr/local/bind 
+echo &amp;quot;export PATH=${PATH}:/usr/local/bind/sbin/:/usr/local/bind/bin/&amp;quot; &amp;gt;&amp;gt; /etc/profile
+source /etc/profile
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;配置bind&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;cd /usr/local/bind/etc/
+rndc-confgen -r /dev/urandom &amp;gt;rndc.conf         #如果报错直接换成 rndc-confgen &amp;gt;rndc.conf
+mkdir /var/named/
+wget http://www.internic.net/domain/named.root      # 下载定义域服务节点
+chown -R named:named /var/named/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;创建配置文件 named.conf&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@linux-node3 etc]# cat named.conf 
+options {
+        directory &amp;quot;/var/named/&amp;quot;;
+        recursion yes;
+        listen-on port 53    { any; };
+        dump-file &amp;quot;/var/named/data/cache_dump.db&amp;quot;;
+        statistics-file &amp;quot;/var/named/data/named_stats.txt&amp;quot;;
+        allow-query { any; };
+        blackhole { none; };
+ };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;启动并测试&#34;&gt;启动并测试&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;named -u named -n 1 -c /usr/local/bind/etc/named.conf
+netstat -lntup|grep 53
+dig www.baidu.com @127.0.0.1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;配置dlz&#34;&gt;配置DLZ&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;create database bind;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;建表&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;CREATE TABLE IF NOT EXISTS `dns_records` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `zone` varchar(255) NOT NULL,
+  `host` varchar(255) NOT NULL DEFAULT &#39;@&#39;,
+  `type` enum(&#39;A&#39;,&#39;MX&#39;,&#39;CNAME&#39;,&#39;NS&#39;,&#39;SOA&#39;,&#39;PTR&#39;,&#39;TXT&#39;,&#39;AAAA&#39;,&#39;SVR&#39;,&#39;URL&#39;) NOT NULL,
+  `data` varchar(255) DEFAULT NULL,
+  `ttl` int(11) NOT NULL DEFAULT &#39;3600&#39;,
+  `mx_priority` int(11) DEFAULT NULL,
+  `view`  enum(&#39;any&#39;, &#39;Telecom&#39;, &#39;Unicom&#39;, &#39;CMCC&#39;, &#39;ours&#39;) NOT NULL  DEFAULT &amp;quot;any&amp;quot; ,
+  `priority` tinyint UNSIGNED NOT NULL DEFAULT &#39;255&#39;,
+  `refresh` int(11) NOT NULL DEFAULT &#39;28800&#39;,
+  `retry` int(11) NOT NULL DEFAULT &#39;14400&#39;,
+  `expire` int(11) NOT NULL DEFAULT &#39;86400&#39;,
+  `minimum` int(11) NOT NULL DEFAULT &#39;86400&#39;,
+  `serial` bigint(20) NOT NULL DEFAULT &#39;2015050917&#39;,
+  `resp_person` varchar(64) NOT NULL DEFAULT &#39;ddns.net&#39;,
+  `primary_ns` varchar(64) NOT NULL DEFAULT &#39;ns.ddns.net.&#39;,
+  PRIMARY KEY (`id`),
+  KEY `type` (`type`),
+  KEY `host` (`host`),
+  KEY `zone` (`zone`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE `dns_xfr` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `zone` varchar(255) NOT NULL,
+  `client` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `zone` (`zone`),
+  KEY `client` (`client`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;创建用户&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;grant all privileges on bind.* to named@&#39;%&#39; identified by &amp;quot;named&amp;quot;;
+flush privileges;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;named.conf 配置DLZ&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;dlz &amp;quot;myzone&amp;quot; {
+        database &amp;quot;mysql
+           {host=192.168.56.11 port=3306 ssl=false dbname=bind user=named pass=named}
+           {SELECT zone FROM dns_records WHERE zone = &#39;$zone$&#39; LIMIT 1}
+           {SELECT ttl, type, mx_priority, IF(type = &#39;TXT&#39;, CONCAT(&#39;\&amp;quot;&#39;,data,&#39;\&amp;quot;&#39;), data) AS data FROM dns_records WHERE zone = &#39;$zone$&#39; AND host = &#39;$record$&#39; AND type &amp;lt;&amp;gt; &#39;
+SOA&#39; AND type &amp;lt;&amp;gt; &#39;NS&#39;}
+           {SELECT ttl, type, data, primary_ns, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = &#39;$zone$&#39; AND (type = &#39;SOA&#39; OR type=&#39;NS&#39;)
+}
+           {SELECT ttl, type, host, mx_priority, IF(type = &#39;TXT&#39;, CONCAT(&#39;\&amp;quot;&#39;,data,&#39;\&amp;quot;&#39;), data) AS data, resp_contact, serial, refresh, retry, expire, minimum FROM dns_reco
+rds WHERE zone = &#39;$zone$&#39; AND type &amp;lt;&amp;gt; &#39;SOA&#39;}
+           {SELECT zone FROM dns_xfr WHERE ( zone=&#39;$zone$&#39; OR zone=&#39;*&#39; ) AND client = &#39;$client$&#39; LIMIT 1}&amp;quot;;
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;插入数据：&lt;/p&gt;
+&lt;p&gt;dns_records：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;insert into bind.dns_records (zone, host, type, data, ttl) VALUES (&#39;test.info&#39;, &#39;www&#39;, &#39;A&#39;, &#39;1.1.1.1&#39;, &#39;60&#39;);
+insert into bind.dns_records (zone, host, type, data, ttl) VALUES (&#39;test.info&#39;, &#39;bbs&#39;, &#39;A&#39;, &#39;1.1.1.1&#39;, &#39;60&#39;);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;dns_xfr：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;1	*	10.31.63.30
+2	*	10.31.63.30
+3	*	192.168.56.12
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重启bind服务并重新测试&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;named -u named -n 1 -c /usr/local/bind/etc/named.conf 
+netstat -lntup|grep 53
+dig @127.0.0.1
+dig www.test.info @127.0.0.1
+dig bbs.test.info @127.0.0.1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;从库&#34;&gt;从库&lt;/h1&gt;
+&lt;p&gt;named.conf&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;options {
+        directory &amp;quot;/usr/local/bind/etc/&amp;quot;;
+        recursion yes;
+        listen-on port 53    { any; };
+        dump-file &amp;quot;/var/named/data/cache_dump.db&amp;quot;;
+        statistics-file &amp;quot;/var/named/data/named_stats.txt&amp;quot;;
+        allow-query { any; };
+ };
+
+key &amp;quot;rndc-key&amp;quot; {
+        algorithm hmac-md5;
+        secret &amp;quot;J+jRGi+v0DvKOoUoY6pWhQ==&amp;quot;;
+};
+
+controls {
+        inet 127.0.0.1 port 953
+        allow { any; } keys { &amp;quot;rndc-key&amp;quot;; };
+};
+
+include &amp;quot;/usr/local/bind/etc/view.conf&amp;quot;;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;view.conf&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;view &amp;quot;View&amp;quot; {
+    zone &amp;quot;.&amp;quot;  IN {
+    	type hint;
+    	file &amp;quot;named.root&amp;quot;;
+    };
+
+    zone &amp;quot;u.com&amp;quot; IN {
+         type    slave;
+         masters { 192.168.56.11; };
+         file    &amp;quot;slaves/u.com.zone&amp;quot;;
+    };
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;p&gt;附带一份企业级主库配置文件&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;options {
+        listen-on port 53 { any; };
+        listen-on-v6 port 53 { none; };
+        directory     &amp;quot;/usr/local/bind-dlz/var/named&amp;quot;;
+        dump-file     &amp;quot;/usr/local/bind-dlz/var/named/data/cache_dump.db&amp;quot;;
+        statistics-file &amp;quot;/usr/local/bind-dlz/var/named/data/named_stats.txt&amp;quot;;
+        memstatistics-file &amp;quot;/usr/local/bind-dlz/var/named/data/named_mem_stats.txt&amp;quot;;
+        //max-cache-size 1024m;
+        zone-statistics yes;
+        tcp-clients 80000;
+        stacksize   1000m;
+        clients-per-query   100000;
+        max-clients-per-query   100000;
+        recursion yes;
+        version &amp;quot;1.0.0&amp;quot;;
+        dnssec-enable no;
+        dnssec-validation no;
+        bindkeys-file &amp;quot;/etc/bind-dlz/named.iscdlv.key&amp;quot;;
+        managed-keys-directory &amp;quot;/usr/local/bind-dlz/var/named/dynamic&amp;quot;;
+        pid-file &amp;quot;/usr/local/bind-dlz/var/run/named.pid&amp;quot;;
+        session-keyfile &amp;quot;/usr/local/bind-dlz/var/run/session.key&amp;quot;;
+
+        masterfile-format text;
+        serial-query-rate 1000;
+        transfers-out 20000;
+        empty-zones-enable no;
+        request-ixfr no;
+
+        allow-update { none; };
+        allow-update-forwarding { none; };
+        allow-query     { any; };
+        allow-query-cache { any ;};
+        allow-transfer { slave_list; };
+        allow-recursion { any; };
+        #allow-recursion { any; };
+        notify yes;
+
+        allow-notify { slave_list; };
+
+        forwarders { 114.114.114.114;119.29.29.29; };
+
+};
+
+
+zone &amp;quot;.&amp;quot; IN {
+    type hint;
+    file &amp;quot;named.ca&amp;quot;;
+};
+
+include &amp;quot;/etc/bind-dlz/named.rfc1912.zones&amp;quot;;
+include &amp;quot;/etc/bind-dlz/named.root.key&amp;quot;;
+include &amp;quot;/etc/bind-dlz/rndc.key&amp;quot;;
+
+
+key &amp;quot;TSIG-key&amp;quot; {
+        algorithm hmac-md5;
+        secret &amp;quot;J+jRGi+v0DvKOoUoY6pWhQ==&amp;quot;;
+};
+
+controls {
+      inet 127.0.0.1 port 953
+      allow { any; } keys { &amp;quot;rndc-key&amp;quot;; };
+};
+
+statistics-channels {
+        inet 127.0.0.1 port 8653 allow { 127.0.0.1; };
+};
+
+################### log ########################
+logging {
+        channel default_debug {
+                file &amp;quot;data/named.run&amp;quot;;
+                severity dynamic;
+        };
+};
+
+
+################### acl ########################
+acl &amp;quot;lan_list&amp;quot; {
+        172.16.0.0/12;
+        192.168.0.0/16;
+        10.0.0.0/8;
+        127.0.0.1;
+};
+
+acl &amp;quot;slave_list&amp;quot; {
+        172.16.1.1;
+        172.16.1.252;
+        10.10.20.21;
+        10.10.20.22;
+        192.168.56.12;
+};
+
+
+
+################### zone ########################
+dlz &amp;quot;myzone&amp;quot; {
+        database &amp;quot;mysql
+           {host=192.168.56.11 port=3306 ssl=false dbname=bind user=named pass=named}
+           {SELECT zone FROM dns_records WHERE zone = &#39;$zone$&#39; LIMIT 1}
+           {SELECT ttl, type, mx_priority, IF(type = &#39;TXT&#39;, CONCAT(&#39;\&amp;quot;&#39;,data,&#39;\&amp;quot;&#39;), data) AS data FROM dns_records WHERE zone = &#39;$zone$&#39; AND host = &#39;$record$&#39; AND type &amp;lt;&amp;gt; &#39;SOA&#39; AND type &amp;lt;&amp;gt; &#39;NS&#39;}
+           {SELECT ttl, type, data, primary_ns, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = &#39;$zone$&#39; AND (type = &#39;SOA&#39; OR type=&#39;NS&#39;)}
+           {SELECT ttl, type, host, mx_priority, IF(type = &#39;TXT&#39;, CONCAT(&#39;\&amp;quot;&#39;,data,&#39;\&amp;quot;&#39;), data) AS data, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = &#39;$zone$&#39; AND type &amp;lt;&amp;gt; &#39;SOA&#39;}
+           {SELECT zone FROM dns_xfr WHERE ( zone=&#39;$zone$&#39; OR zone=&#39;*&#39; ) AND client = &#39;$client$&#39; LIMIT 1}&amp;quot;;
+};&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        <item>
+        <title>Clamv</title>
+        <link>https://caizhe.org/p/clamv/</link>
+        <pubDate>Tue, 13 Mar 2018 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/clamv/</guid>
+        <description>&lt;p&gt;最近研究安全方向，发现Linux下的一些杀毒软件比较少，今天给大家介绍一款开源的轻量级杀毒软件clamAV。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;特点&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;1）GNU开源软件&lt;/p&gt;
+&lt;p&gt;　　2）快速扫描&lt;/p&gt;
+&lt;p&gt;　　3）可以检测35000种病毒，蠕早，特洛依，包括Microsoft Office文档及宏病毒&lt;/p&gt;
+&lt;p&gt;　　4）能够检测压缩文件（Zip RAR Tar Gzip Bzip2……）&lt;/p&gt;
+&lt;p&gt;　　5）强大的邮件扫描功能&lt;/p&gt;
+&lt;p&gt;　　6）扩展性强&lt;/p&gt;
+&lt;p&gt;1.时间同步&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ntpdate time1.aliyun.com
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;2.安装clamAV。（可以使用阿里云的epel源）&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install clamav
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;3.更新病毒库。（第一次下载可能会花点儿时间）&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; freshclam
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;4.测试：下载带病毒软件&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;wget http://www.eicar.org/download/eicar_com.zip
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;4.使用 clamscan 开始扫描&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;clamscan -r /etc/
+
+…………
+./.rnd: OK
+/eicar_com.zip: Eicar-Test-Signature FOUND
+./.cshrc: OK
+…………
+
+	----------- SCAN SUMMARY -----------
+Known viruses: 5748467
+Engine version: 0.99.2
+Scanned directories: 1
+Scanned files: 15
+Infected files: 1
+Data scanned: 0.10 MB
+Data read: 91.95 MB (ratio 0.00:1)
+Time: 19.179 sec (0 m 19 s)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以加上 &amp;ndash;remove 参数，扫描完之后直接杀掉病毒&lt;/p&gt;
+&lt;p&gt;可以加上定时任务每天定时扫描和更新病毒库,此处不再介绍&lt;/p&gt;
+&lt;p&gt;如果你发现了ClamVA查杀不了的病毒，可以在以下的网址提交相关的信息&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;  http://www.clamav.net/sendvirus.html 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;官方网址：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;  http://www.clamav.net/lang/en/
+  http://www.clamav.net/sendvirus.html&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        <item>
+        <title>LVS&#43;KeepAlived</title>
+        <link>https://caizhe.org/p/lvs-keepalived/</link>
+        <pubDate>Wed, 13 Sep 2017 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/lvs-keepalived/</guid>
+        <description>&lt;p&gt;最近闲着无聊复习了一下高可用Keepalive和LVS反向代理，觉的挺经典的，整理了一篇文档&lt;/p&gt;
+&lt;p&gt;在部署之前，我们先对LVS的一些基础知识了解一下&lt;/p&gt;
+&lt;p&gt;#LVS的模式&lt;/p&gt;
+&lt;p&gt;###NAT模式&lt;/p&gt;
+&lt;p&gt;NAT用法本来是因为网络IP地址不足而把内部保留IP地址通过映射转换成公网地址的一种上网方式(原地址NAT)｡如果把NAT的过程稍微变化,就可以成为负载均衡的一种方式｡原理其实就是把从客户端发来的IP包的IP头目的地址在DR上换成其中一台REALSERVER的IP地址并发至此REALSERVER,而REALSERVER则在处理完成后把数据经过DR主机发回给客户端,DR在这个时候再把数据包的原IP地址改为DR接口上的IP地址即可｡期间,无论是进来的流量,还是出去的流量,都必须经过DR｡&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://i.imgur.com/73k03Pw.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;###FULLNAT 模式&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://i.imgur.com/thRxIAJ.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;###TUNNEL模式&lt;/p&gt;
+&lt;p&gt;隧道模式则类似于VPN的方式,使用网络分层的原理,在从客户端发来的数据包的基础上,封装一个新的IP头标记(不完整的IP头,只有目的IP部)发给REALSERVER,REALSERVER收到后,先把DR发过来的数据包的头给解开,还原其数据包原样,处理后,直接返回给客户端,而不需要再经过DR｡需要注意的是,由于REALSERVER需要对DR发过来的数据包进行还原,也就是说必须支持IPTUNNEL协议｡所以,在REALSERVER的内核中,必须编译支持IPTUNNEL这个选项｡IPTUNNEL也在Net working options里面｡&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://i.imgur.com/1f4ydpR.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;###DR模式&lt;/p&gt;
+&lt;p&gt;直接路由模式比较特别,很难说和什么方面相似,前2种模式基本上都是工作在网络层上(三层),而直接路由模式则应该是工作在数据链路层上(二层)｡其原理为,DR和REALSERVER都使用同一个IP对外服务｡但只有DR对ARP请求进行响应,所有REALSERVER对本身这个IP的ARP请求保持静默｡也就是说,网关会把对这个服务IP的请求全部定向给DR,而DR收到数据包后根据调度算法,找出对应的REALSERVER,把目的MAC地址改为REALSERVER的MAC并发给这台REALSERVER｡这时REALSERVER收到这个数据包,则等于直接从客户端收到这个数据包无异,处理后直接返回给客户端｡由于DR要对二层包头进行改换,所以DR和REALSERVER之间必须在一个广播域,也可以简单的理解为在同一台交换机上｡&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://i.imgur.com/qZlKfnd.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;#LVS的算法&lt;/p&gt;
+&lt;p&gt;###轮叫调度(Round-RobinScheduling)&lt;/p&gt;
+&lt;p&gt;调度器通过&amp;quot;轮叫&amp;quot;调度算法将外部请求按顺序轮流分配到集群中的真实服务器上,它均等地对待每一台服务器,而不管服务器上实际的连接数和系统负载｡&lt;/p&gt;
+&lt;p&gt;###加权轮叫调度(WeightedRound-RobinScheduling)&lt;/p&gt;
+&lt;p&gt;调度器通过&amp;quot;加权轮叫&amp;quot;调度算法根据真实服务器的不同处理能力来调度访问请求｡这样可以保证处理能力强的服务器处理更多的访问流量｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值｡&lt;/p&gt;
+&lt;p&gt;###最小连接调度(Least-ConnectionScheduling)&lt;/p&gt;
+&lt;p&gt;调度器通过&amp;quot;最少连接&amp;quot;调度算法动态地将网络请求调度到已建立的链接数最少的服务器上｡如果集群系统的真实服务器具有相近的系统性能,采用&amp;quot;最小连接&amp;quot;调度算法可以较好地均衡负载｡&lt;/p&gt;
+&lt;p&gt;###加权最小连接调度(WeightedLeast-ConnectionScheduling)&lt;/p&gt;
+&lt;p&gt;在集群系统中的服务器性能差异较大的情况下,调度器采用&amp;quot;加权最少链接&amp;quot;调度算法优化负载均衡性能,具有较高权值的服务器将承受较大比例的活动连接负载｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值&lt;/p&gt;
+&lt;p&gt;###基于局部性的最少链接(Locality-BasedLeastConnectionsScheduling)&lt;/p&gt;
+&lt;p&gt;基于局部性的最少链接&amp;quot;调度算法是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡该算法根据请求的目标IP地址找出该目标IP地址最近使用的服务器,若该服务器是可用的且没有超载,将请求发送到该服务器;若服务器不存在,或者该服务器超载且有服务器处于一半的工作负载,则用&amp;quot;最少链接&amp;quot;的原则选出一个可用的服务器,将请求发送到该服务器｡&lt;/p&gt;
+&lt;p&gt;###带复制的基于局部性最少链接(Locality-BasedLeastConnectionswithReplicationScheduling)&lt;/p&gt;
+&lt;p&gt;带复制的基于局部性最少链接&amp;quot;调度算法也是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡它与LBLC算法的不同之处是它要维护从一个目标IP地址到一组服务器的映射,而LBLC算法维护从一个目标IP地址到一台服务器的映射｡该算法根据请求的目标IP地址找出该目标IP地址对应的服务器组,按&amp;quot;最小连接&amp;quot;原则从服务器组中选出一台服务器,若服务器没有超载,将请求发送到该服务器,若服务器超载;则按&amp;quot;最小连接&amp;quot;原则从这个集群中选出一台服务器,将该服务器加入到服务器组中,将请求发送到该服务器｡同时,当该服务器组有一段时间没有被修改,将最忙的服务器从服务器组中删除,以降低复制的程度&lt;/p&gt;
+&lt;p&gt;###目标地址散列调度(DestinationHashingScheduling)&lt;/p&gt;
+&lt;p&gt;目标地址散列&amp;quot;调度算法根据请求的目标IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空&lt;/p&gt;
+&lt;p&gt;###源地址散列调度(SourceHashingScheduling)&lt;/p&gt;
+&lt;p&gt;源地址散列&amp;quot;调度算法根据请求的源IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空｡&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install keepalived ipvsadm
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;#keepalive高可用&lt;/p&gt;
+&lt;p&gt;vim /etc/keepalived/keepalived.conf&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+     acassen@firewall.loc
+     failover@firewall.loc
+     sysadmin@firewall.loc
+   }
+   notification_email_from Alexandre.Cassen@firewall.loc
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id LVS-BACKUP
+}
+
+vrrp_instance VI_1 {					#实例的ID
+	state BACKUP						#主节点为MASTER
+	interface eth0
+	virtual_router_id 51				# ID一定要统一两边
+	priority 50							# 备节点一定要低于主节点
+	advert_int 1
+	authentication {		
+	    auth_type PASS
+	    auth_pass 1111
+	}
+	virtual_ipaddress {					
+	    192.168.56.250					#VIP的地址
+	}
+}	
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;主节点和主要是把角色和优先级调整一下即可，这里不再重复&lt;/p&gt;
+&lt;p&gt;#keepalive+LVS高可用负载均衡&lt;/p&gt;
+&lt;p&gt;还是在keepalive的配置文件末尾加入以下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;	virtual_server 192.168.56.250 80 {				VIP的地址
+    delay_loop 6
+    lb_algo rr										#LVS的算法（这里采用DR模式）	
+    lb_kind DR
+    nat_mask 255.255.255.0
+    persistence_timeout 50
+    protocol TCP
+
+    real_server 192.168.56.11 80 {					#后端的节点IP地址
+        weight 1
+        TCP_CHECK {									# 健康检查功能
+            connect_timeout 3
+            nb_get_retry 3
+			delay_before_retry 3
+            connect_port 80
+        }
+    }
+
+    real_server 192.168.56.12 80 {
+        weight 1
+        TCP_CHECK {
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+            connect_port 80
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在每个客户端的节点加入ARP的抑制&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ifconfig  lo:0 192.168.56.250/32 up
+route add -host 192.168.56.250 dev lo
+echo &amp;quot;1&amp;quot; &amp;gt;/proc/sys/net/ipv4/conf/lo/arp_ignore 
+echo &amp;quot;2&amp;quot; &amp;gt;/proc/sys/net/ipv4/conf/lo/arp_announce 
+echo &amp;quot;1&amp;quot; &amp;gt;/proc/sys/net/ipv4/conf/all/arp_ignore 
+echo &amp;quot;2&amp;quot; &amp;gt;/proc/sys/net/ipv4/conf/all/arp_announce 
+&lt;/code&gt;&lt;/pre&gt;
 </description>
         </item>
         <item>
@@ -2570,6 +3192,201 @@ volatile-random：随机淘汰数据，只淘汰设定了有效期的key
 allkeys-random：随机淘汰数据，所有的key都可以被淘汰
 volatile-ttl：淘汰剩余有效期最短的key
 &lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        <item>
+        <title>301和302区别</title>
+        <link>https://caizhe.org/p/301%E5%92%8C302%E5%8C%BA%E5%88%AB/</link>
+        <pubDate>Sun, 11 Dec 2016 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/301%E5%92%8C302%E5%8C%BA%E5%88%AB/</guid>
+        <description>&lt;p&gt;1）301和302的区别。&lt;/p&gt;
+&lt;p&gt;　　301和302状态码都表示重定向，就是说浏览器在拿到服务器返回的这个状态码后会自动跳转到一个新的URL地址，这个地址可以从响应的Location首部中获取
+（用户看到的效果就是他输入的地址A瞬间变成了另一个地址B）——这是它们的共同点。&lt;/p&gt;
+&lt;p&gt;　　他们的不同在于。301表示旧地址A的资源已经被永久地移除了（这个资源不可访问了），搜索引擎在抓取新内容的同时也将旧的网址交换为重定向之后的网址；&lt;/p&gt;
+&lt;p&gt;　　302表示旧地址A的资源还在（仍然可以访问），这个重定向只是临时地从旧地址A跳转到地址B，搜索引擎会抓取新的内容而保存旧的网址。 SEO302好于301&lt;/p&gt;
+&lt;p&gt;2）重定向原因：
+（1）网站调整（如改变网页目录结构）；
+（2）网页被移到一个新地址；
+（3）网页扩展名改变(如应用需要把.php改成.Html或.shtml)。
+这种情况下，如果不做重定向，则用户收藏夹或搜索引擎数据库中旧地址只能让访问客户得到一个404页面错误信息，访问流量白白丧失；再者某些注册了多个域名的
+网站，也需要通过重定向让访问这些域名的用户自动跳转到主站点等。&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>KVM虚拟机</title>
+        <link>https://caizhe.org/p/kvm%E8%99%9A%E6%8B%9F%E6%9C%BA/</link>
+        <pubDate>Mon, 02 May 2016 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/kvm%E8%99%9A%E6%8B%9F%E6%9C%BA/</guid>
+        <description>&lt;p&gt;最近闲着无聊，对比了docker和KVM，发现docker很厉害啊，未来的成长空间非常不错，但是目前还是有些不足，比如一些对于隔离的效果不是很好，再等两年成熟之后再去研究，现在感觉还是KVM比较实用，玩了玩整理了份文档，供大家分享：&lt;/p&gt;
+&lt;p&gt;###基础环境
+[root@localhost ~]# cat /etc/redhat-release
+CentOS Linux release 7.1.1503 (Core)
+[root@localhost ~]# uname -r
+3.10.0-229.el7.x86_64&lt;/p&gt;
+&lt;p&gt;###查看是否支持&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;grep -E &#39;(vmx|svm)&#39; /proc/cpuinfo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;###安装&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install qemu-kvm libvirt libvirt-python libguestfs-tools virt-install qemu-kvm-toools virt-manager
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;###启动&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;systemctl start libvirtd
+systemctl status libvirtd
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;###创建虚拟机&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;qemu-img create -f raw Centos-7.raw 10G		#在当前目录创建一个格式为raw的空的虚拟机，大小为10G
+
+virt-install --name Centos-7 --ram 1024 --vcpus=1 --disk path=Centos-7.raw --cdrom=CentOS-7-x86_64-DVD-1503-01_2.iso  --graphics vnc,listen=0.0.0.0 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用VNC工具连接到主机即可（安装操作系统这里不再介绍）&lt;/p&gt;
+&lt;p&gt;查看运行中的虚拟机&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh list --all
+
+ Id    Name                           State
+----------------------------------------------------
+ 7     Centos-7                       running
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看虚拟机的详细信息&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@localhost media]# virsh dominfo  Centos-7
+Id:             7
+Name:           Centos-7
+UUID:           544cdb00-6c2c-4c93-9e11-086920b89320
+OS Type:        hvm
+State:          running
+CPU(s):         1
+CPU time:       46.9s
+Max memory:     1048576 KiB
+Used memory:    1048576 KiB
+Persistent:     yes
+Autostart:      disable
+Managed save:   no
+Security model: none
+Security DOI:   0	
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;##KVM的扩容与缩容&lt;/p&gt;
+&lt;p&gt;####内存&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh setmem Centos-7 512M
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;####硬盘&lt;/p&gt;
+&lt;p&gt;硬盘也可以动态扩容、缩容，但是笔者经验不建议，可能丢失数据，如果数据硬盘不够了，再重新添加一块硬盘。&lt;/p&gt;
+&lt;p&gt;##格式转换&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@linux-node2 opt]# qemu-img convert -f raw -O qcow2 Centos-7.raw Centos-7.qcow2
+
+[root@linux-node2 opt]# ll -h Centos-7.*
+-rw-r--r-- 1 root root 1017M May  4 16:18 Centos-7.qcow2
+-rw-r--r-- 1 qemu qemu   10G May  4 16:11 Centos-7.raw
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;#RAW与QCOW2优缺点：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;raw格式是最原始的一种格式，特点是I/O性能最好的一种格式，没有之一，缺点就是功能很少，有很多快照、加密、压缩都不支持，而且特别大，最开始制定10G就占用10G的空间。
+qcow2与raw相反，功能很多，支持快照、加密、压缩，而且占用资源小，在原始的镜像上面只保留修改的部分，但是性能差于raw。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;##让虚拟机桥接到物理网卡&lt;/p&gt;
+&lt;p&gt;此时的虚拟机还不能上网，仅仅是运行了一个系统，要想上网进行如下操作：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;brctl addbr br0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;模拟出一块网卡名字为 br0&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;brctl addif br0 eth0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;桥接到eth0，注意，这样会离开断开与服务器的连接，因为服务器的eth0是没有IP地址的&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; ip addr del dev eth0 192.168.56.11/24
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删除原eth0的IP地址&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ifconfig br0 192.168.56.11/24 up
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;此时虽然连上了服务器，但是任然不能上网，因为路由不对，添加以下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;route add default gw 1.1.1.1（网关地址）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;现在会断开与KVM虚拟机的连接，没关系，修改虚拟机的XML文件：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh edit Centos-7		#修改为以下两行
+
+     &amp;lt;interface type=&#39;bridge&#39;&amp;gt;
+       &amp;lt;source bridge=&#39;br0&#39;/&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重启一下&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh  reboot Centos-7
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后配置IP地址、网关、DNS等即可连接上网，此处不再演示&lt;/p&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;p&gt;附带一些常用命令：&lt;/p&gt;
+&lt;p&gt;开机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh start test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;关机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh shutdown test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;强制关机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh destroy test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重新启动：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh reboot test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;通过配置文档启动主机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh create /etc/libvirt/qemu/test1.xml
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看主机状态：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh list --all
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;停止/挂机虚拟机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh suspend test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;保存虚拟机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh save test1  
+或者
+virsh dumpxml Centos-7 &amp;gt; dump_kvm.xml
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;还原虚拟机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh resume test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;p&gt;#快照功能&lt;/p&gt;
+&lt;p&gt;默认快照文件放在 /var/lib/libvirt/qemu/snapshot/&lt;/p&gt;
+&lt;p&gt;拍摄快照：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh snapshot-create test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看快照：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh snapshot-list test1
+
+	 Name                 Creation Time             State
+------------------------------------------------------------
+ 1486394873           2017-02-06 23:27:53 +0800 shutoff				#上次快照
+ 1486394993           2017-02-06 23:29:53 +0800 shutoff				#这次快照
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;恢复快照：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh snapshot-revert test1 1486394873
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;p&gt;例1：修改CPU数量&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh edit Centos-7
+
+&amp;lt;vcpu placement=&#39;auto&#39; current=&#39;1&#39;&amp;gt;4&amp;lt;/vcpu&amp;gt;						#CPU上限是4个，目前是一个
+
+virsh setvcpus Centos-7 2 --live								#也可以使用--config参数
+virsh reboot  Centos-7											#重启可选
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;例2：添加硬盘&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;qemu-img create -f qcow2 add.img 20G
+
+virsh attach-disk Centos-7 /opt/add.img sdb					#添加一块硬盘（热添加，重启失效）
+
+virsh edit Centos-7											#写入配置文件
+	…………
+    &amp;lt;/disk&amp;gt;
+&amp;lt;disk type=&#39;file&#39; device=&#39;disk&#39;&amp;gt;
+  &amp;lt;driver name=&#39;qemu&#39; type=&#39;qcow2&#39; cache=&#39;none&#39;/&amp;gt;
+  &amp;lt;source file=&#39;/opt/add.img&#39;/&amp;gt;
+  &amp;lt;target dev=&#39;sdb&#39; bus=&#39;virtio&#39;/&amp;gt;
+  &amp;lt;address type=&#39;pci&#39; domain=&#39;0x0000&#39; bus=&#39;0x00&#39; slot=&#39;0x06&#39; function=&#39;0x0&#39;/&amp;gt;
+&amp;lt;/disk&amp;gt;
+
+virsh reboot Centos-7
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;后来我有找到更简单的一种方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh attach-disk Centos-7 /opt/add.img sdb --config&lt;/code&gt;&lt;/pre&gt;
 </description>
         </item>
         <item>

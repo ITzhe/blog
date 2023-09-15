@@ -55,11 +55,43 @@
         <description></description>
         </item>
         <item>
+        <title>存储</title>
+        <link>https://caizhe.org/tags/%E5%AD%98%E5%82%A8/</link>
+        <pubDate>Fri, 13 Sep 2019 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/%E5%AD%98%E5%82%A8/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>高可用</title>
+        <link>https://caizhe.org/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</link>
+        <pubDate>Fri, 13 Sep 2019 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</guid>
+        <description></description>
+        </item>
+        <item>
         <title>Nginx</title>
         <link>https://caizhe.org/tags/nginx/</link>
         <pubDate>Sat, 02 Mar 2019 17:44:11 +0800</pubDate>
         
         <guid>https://caizhe.org/tags/nginx/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>DNS</title>
+        <link>https://caizhe.org/tags/dns/</link>
+        <pubDate>Thu, 02 Aug 2018 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/dns/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>安全</title>
+        <link>https://caizhe.org/tags/%E5%AE%89%E5%85%A8/</link>
+        <pubDate>Tue, 13 Mar 2018 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/%E5%AE%89%E5%85%A8/</guid>
         <description></description>
         </item>
         <item>
@@ -84,6 +116,14 @@
         <pubDate>Thu, 02 Mar 2017 20:52:54 +0800</pubDate>
         
         <guid>https://caizhe.org/tags/%E8%B0%83%E4%BC%98/</guid>
+        <description></description>
+        </item>
+        <item>
+        <title>KVM</title>
+        <link>https://caizhe.org/tags/kvm/</link>
+        <pubDate>Mon, 02 May 2016 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/tags/kvm/</guid>
         <description></description>
         </item>
         

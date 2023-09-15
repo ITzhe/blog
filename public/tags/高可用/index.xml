@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>高可用 on 菜菜的运维之路</title>
+        <link>https://caizhe.org/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</link>
+        <description>Recent content in 高可用 on 菜菜的运维之路</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <lastBuildDate>Fri, 13 Sep 2019 10:59:21 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Glusterfs分布式存储</title>
+        <link>https://caizhe.org/p/glusterfs%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8/</link>
+        <pubDate>Fri, 13 Sep 2019 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/glusterfs%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8/</guid>
+        <description>&lt;p&gt;#volume卷&lt;/p&gt;
+&lt;p&gt;分布式卷（distributed）文件通过hash算法随机分布到bricks组成的卷上&lt;/p&gt;
+&lt;p&gt;复制式卷（replicated）类似raid1，replica数必须等于volume中brick所包含的存储服务器数。&lt;/p&gt;
+&lt;p&gt;条带式卷（striped）类似raid0，strips数必须等于volume中brick所包含的存储服务器数，文件被分布成数据块，以round robin的方式存在bricks中，并发粒度是数据块，大文件性能好。&lt;/p&gt;
+&lt;p&gt;分布式条带卷（distributed striped）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和条带式的功能。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;分布式复制卷&lt;/strong&gt;（distributed replicated）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和复制卷的功能。&lt;/p&gt;
+&lt;p&gt;#分布式卷&lt;/p&gt;
+&lt;p&gt;加入存储池&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage1 ~]# gluster peer probe mystorage2
+peer probe: success. 
+[root@mystorage1 ~]# gluster peer probe mystorage3
+peer probe: success. 
+[root@mystorage1 ~]# gluster peer probe mystorage4
+peer probe: success. 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在其他节点检查&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage4 ~]# gluster peer status
+Number of Peers: 3
+
+Hostname: mystorage1
+Uuid: 429d3353-dbcc-47d7-b3b5-4c3267fa26df
+State: Peer in Cluster (Connected)
+
+Hostname: mystorage3
+Uuid: 7c14cd1f-e801-48ca-8f23-09b017537400
+State: Peer in Cluster (Connected)
+
+Hostname: mystorage2
+Uuid: 14b4575a-2ba3-496b-96ea-9a4fe60819b3
+State: Peer in Cluster (Connected)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;初始化&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install xfsprogs -y
+mkfs.xfs -f /dev/sdb
+mkdir -p /storage/brick1
+mount /dev/sdb /storage/brick1/
+echo &amp;quot;/dev/sdb /storage/brick1/  xfs defaults 0 0&amp;quot; &amp;gt;&amp;gt; /etc/fstab 
+mount -a
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;创建卷（整合磁盘）&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage1 ~]# gluster volume create gv1 mystorage1:/storage/brick1/ mystorage2:/storage/brick1/ force 
+volume create: gv1: success: please start the volume to access data
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;启动卷&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage1 ~]# gluster volume start gv1
+volume start: gv1: success
+[root@mystorage4 ~]# gluster volume gv1 info
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;挂载卷&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage3 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage3 ~]# df -h
+…………
+127.0.0.1:/gv1   20G   65M   20G   1% /mnt
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;把刚才1和2的卷整合在一起之后，共享出来，然后3挂在到gv1种&lt;/p&gt;
+&lt;p&gt;测试&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage4 ~]# mv d4 /mnt/
+[root@mystorage1 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage1 ~]# ls /mnt/
+d4
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;#分布式复制卷&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage2 ~]# gluster volume create gv2 replica 2 mystorage3:/storage/brick1/ mystorage4:/storage/brick1/ force 
+volume create: gv2: success: please start the volume to access data
+
+[root@mystorage2 ~]# gluster volume info gv2
+
+Volume Name: gv2
+Type: Replicate
+Volume ID: 42949fc2-4400-4637-84c7-28aafed7676e
+Status: Created
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: mystorage3:/storage/brick1
+Brick2: mystorage4:/storage/brick1
+Options Reconfigured:
+performance.readdir-ahead: on
+[root@mystorage1 ~]# gluster volume restart gv2
+volume start: gv2: success
+[root@mystorage1 ~]# df -h
+…… ………
+127.0.0.1:/gv1   20G   65M   20G   1% /mnt
+127.0.0.1:/gv2   10G   33M   10G   1% /opt
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;总结：分布巻就像RAID0一样，是一份数据写在了两个地方，把一个数据打散了；而复制卷就像RAID1一样，把一份数据写在了多份。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;mkfs.xfs -f /dev/sdc
+mkdir -p /storage/brick2
+mount /dev/sdc /storage/brick2
+echo &amp;quot;/dev/sdc /storage/brick2/  xfs defaults 0 0&amp;quot; &amp;gt;&amp;gt; /etc/fstab 
+df -h
+#gluster volume create gv3 stripe 2 mystorage3:/storage/brick2/ mystorage4:/storage/brick2 force
+gluster volume start gv3
+mkdir /gv1 /gv2 /gv3
+
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv1 /gv1
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv2 /gv2
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv3 /gv3
+[root@mystorage4 ~]# dd if=/dev/zero bs=1024 count=10000 of=/gv3/10M.file
+[root@mystorage4 ~]# dd if=/dev/zero bs=1024 count=20000 of=/gv3/20M.file
+[root@mystorage4 gv3]# ll -h
+total 30M
+-rw-r--r--. 1 root root 9.8M Dec 27 12:19 10M.file
+-rw-r--r--. 1 root root  20M Dec 27 12:19 20M.file
+[root@mystorage4 gv3]# ll /storage/brick2/ -h
+total 15M
+-rw-r--r--. 2 root root 4.9M Dec 27 12:19 10M.file
+-rw-r--r--. 2 root root 9.8M Dec 27 12:19 20M.file
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;注意看大小&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage3 ~]# mkdir /gv1 /gv2 /gv3
+[root@mystorage3 ~]# mount -t glusterfs 127.0.0.1:gv3 /gv3
+
+[root@mystorage3 ~]# ll /gv3/
+total 30000
+-rw-r--r--. 1 root root 10240000 Dec 27 12:19 10M.file
+-rw-r--r--. 1 root root 20480000 Dec 27 12:19 20M.file
+[root@mystorage3 ~]# ll /storage/brick2/
+total 15032
+-rw-r--r--. 2 root root  5128192 Dec 27 12:19 10M.file
+-rw-r--r--. 2 root root 10256384 Dec 27 12:19 20M.file
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;注意看大小&lt;/p&gt;
+&lt;p&gt;#增加/删除磁盘&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage3 ~]# gluster volume stop gv2
+Stopping volume will make its data inaccessible. Do you want to continue? (y/n) y
+volume stop: gv2: success
+[root@mystorage3 ~]# gluster volume add-brick gv2 replica 2 mystorage1:/storage/brick2/ mystorage2:/storage/brick2 force
+volume add-brick: success
+[root@mystorage3 ~]# gluster volume start gv2
+volume start: gv2: success
+[root@mystorage4 gv3]# umount /gv2
+[root@mystorage4 gv3]# mount -t glusterfs 127.0.0.1:gv2 /gv2
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;扩容之后还需要磁盘平衡，否则是无法再新加入的磁盘中写入数据的&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@mystorage4 gv2]# gluster volume rebalance gv2 start	
+[root@mystorage4 gv2]# gluster volume rebalance gv2 status
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;注意：增加的brick必须是存储节点的倍数，例如reolica为2，你增加的数量必须是2 4 6 8 ……&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;gluster volume stop gv2
+gluster volume remove-brick gv2 replica 2 mystorage1:/storage/brick2/ mystorage2:/storage/brick2 force
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;#删除卷
+umoun gv1
+gluster volume stop gv1
+gluster volume delete gv1&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>LVS&#43;KeepAlived</title>
+        <link>https://caizhe.org/p/lvs-keepalived/</link>
+        <pubDate>Wed, 13 Sep 2017 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/lvs-keepalived/</guid>
+        <description>&lt;p&gt;最近闲着无聊复习了一下高可用Keepalive和LVS反向代理，觉的挺经典的，整理了一篇文档&lt;/p&gt;
+&lt;p&gt;在部署之前，我们先对LVS的一些基础知识了解一下&lt;/p&gt;
+&lt;p&gt;#LVS的模式&lt;/p&gt;
+&lt;p&gt;###NAT模式&lt;/p&gt;
+&lt;p&gt;NAT用法本来是因为网络IP地址不足而把内部保留IP地址通过映射转换成公网地址的一种上网方式(原地址NAT)｡如果把NAT的过程稍微变化,就可以成为负载均衡的一种方式｡原理其实就是把从客户端发来的IP包的IP头目的地址在DR上换成其中一台REALSERVER的IP地址并发至此REALSERVER,而REALSERVER则在处理完成后把数据经过DR主机发回给客户端,DR在这个时候再把数据包的原IP地址改为DR接口上的IP地址即可｡期间,无论是进来的流量,还是出去的流量,都必须经过DR｡&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://i.imgur.com/73k03Pw.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;###FULLNAT 模式&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://i.imgur.com/thRxIAJ.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;###TUNNEL模式&lt;/p&gt;
+&lt;p&gt;隧道模式则类似于VPN的方式,使用网络分层的原理,在从客户端发来的数据包的基础上,封装一个新的IP头标记(不完整的IP头,只有目的IP部)发给REALSERVER,REALSERVER收到后,先把DR发过来的数据包的头给解开,还原其数据包原样,处理后,直接返回给客户端,而不需要再经过DR｡需要注意的是,由于REALSERVER需要对DR发过来的数据包进行还原,也就是说必须支持IPTUNNEL协议｡所以,在REALSERVER的内核中,必须编译支持IPTUNNEL这个选项｡IPTUNNEL也在Net working options里面｡&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://i.imgur.com/1f4ydpR.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;###DR模式&lt;/p&gt;
+&lt;p&gt;直接路由模式比较特别,很难说和什么方面相似,前2种模式基本上都是工作在网络层上(三层),而直接路由模式则应该是工作在数据链路层上(二层)｡其原理为,DR和REALSERVER都使用同一个IP对外服务｡但只有DR对ARP请求进行响应,所有REALSERVER对本身这个IP的ARP请求保持静默｡也就是说,网关会把对这个服务IP的请求全部定向给DR,而DR收到数据包后根据调度算法,找出对应的REALSERVER,把目的MAC地址改为REALSERVER的MAC并发给这台REALSERVER｡这时REALSERVER收到这个数据包,则等于直接从客户端收到这个数据包无异,处理后直接返回给客户端｡由于DR要对二层包头进行改换,所以DR和REALSERVER之间必须在一个广播域,也可以简单的理解为在同一台交换机上｡&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://i.imgur.com/qZlKfnd.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;#LVS的算法&lt;/p&gt;
+&lt;p&gt;###轮叫调度(Round-RobinScheduling)&lt;/p&gt;
+&lt;p&gt;调度器通过&amp;quot;轮叫&amp;quot;调度算法将外部请求按顺序轮流分配到集群中的真实服务器上,它均等地对待每一台服务器,而不管服务器上实际的连接数和系统负载｡&lt;/p&gt;
+&lt;p&gt;###加权轮叫调度(WeightedRound-RobinScheduling)&lt;/p&gt;
+&lt;p&gt;调度器通过&amp;quot;加权轮叫&amp;quot;调度算法根据真实服务器的不同处理能力来调度访问请求｡这样可以保证处理能力强的服务器处理更多的访问流量｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值｡&lt;/p&gt;
+&lt;p&gt;###最小连接调度(Least-ConnectionScheduling)&lt;/p&gt;
+&lt;p&gt;调度器通过&amp;quot;最少连接&amp;quot;调度算法动态地将网络请求调度到已建立的链接数最少的服务器上｡如果集群系统的真实服务器具有相近的系统性能,采用&amp;quot;最小连接&amp;quot;调度算法可以较好地均衡负载｡&lt;/p&gt;
+&lt;p&gt;###加权最小连接调度(WeightedLeast-ConnectionScheduling)&lt;/p&gt;
+&lt;p&gt;在集群系统中的服务器性能差异较大的情况下,调度器采用&amp;quot;加权最少链接&amp;quot;调度算法优化负载均衡性能,具有较高权值的服务器将承受较大比例的活动连接负载｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值&lt;/p&gt;
+&lt;p&gt;###基于局部性的最少链接(Locality-BasedLeastConnectionsScheduling)&lt;/p&gt;
+&lt;p&gt;基于局部性的最少链接&amp;quot;调度算法是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡该算法根据请求的目标IP地址找出该目标IP地址最近使用的服务器,若该服务器是可用的且没有超载,将请求发送到该服务器;若服务器不存在,或者该服务器超载且有服务器处于一半的工作负载,则用&amp;quot;最少链接&amp;quot;的原则选出一个可用的服务器,将请求发送到该服务器｡&lt;/p&gt;
+&lt;p&gt;###带复制的基于局部性最少链接(Locality-BasedLeastConnectionswithReplicationScheduling)&lt;/p&gt;
+&lt;p&gt;带复制的基于局部性最少链接&amp;quot;调度算法也是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡它与LBLC算法的不同之处是它要维护从一个目标IP地址到一组服务器的映射,而LBLC算法维护从一个目标IP地址到一台服务器的映射｡该算法根据请求的目标IP地址找出该目标IP地址对应的服务器组,按&amp;quot;最小连接&amp;quot;原则从服务器组中选出一台服务器,若服务器没有超载,将请求发送到该服务器,若服务器超载;则按&amp;quot;最小连接&amp;quot;原则从这个集群中选出一台服务器,将该服务器加入到服务器组中,将请求发送到该服务器｡同时,当该服务器组有一段时间没有被修改,将最忙的服务器从服务器组中删除,以降低复制的程度&lt;/p&gt;
+&lt;p&gt;###目标地址散列调度(DestinationHashingScheduling)&lt;/p&gt;
+&lt;p&gt;目标地址散列&amp;quot;调度算法根据请求的目标IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空&lt;/p&gt;
+&lt;p&gt;###源地址散列调度(SourceHashingScheduling)&lt;/p&gt;
+&lt;p&gt;源地址散列&amp;quot;调度算法根据请求的源IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空｡&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install keepalived ipvsadm
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;#keepalive高可用&lt;/p&gt;
+&lt;p&gt;vim /etc/keepalived/keepalived.conf&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+     acassen@firewall.loc
+     failover@firewall.loc
+     sysadmin@firewall.loc
+   }
+   notification_email_from Alexandre.Cassen@firewall.loc
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id LVS-BACKUP
+}
+
+vrrp_instance VI_1 {					#实例的ID
+	state BACKUP						#主节点为MASTER
+	interface eth0
+	virtual_router_id 51				# ID一定要统一两边
+	priority 50							# 备节点一定要低于主节点
+	advert_int 1
+	authentication {		
+	    auth_type PASS
+	    auth_pass 1111
+	}
+	virtual_ipaddress {					
+	    192.168.56.250					#VIP的地址
+	}
+}	
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;主节点和主要是把角色和优先级调整一下即可，这里不再重复&lt;/p&gt;
+&lt;p&gt;#keepalive+LVS高可用负载均衡&lt;/p&gt;
+&lt;p&gt;还是在keepalive的配置文件末尾加入以下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;	virtual_server 192.168.56.250 80 {				VIP的地址
+    delay_loop 6
+    lb_algo rr										#LVS的算法（这里采用DR模式）	
+    lb_kind DR
+    nat_mask 255.255.255.0
+    persistence_timeout 50
+    protocol TCP
+
+    real_server 192.168.56.11 80 {					#后端的节点IP地址
+        weight 1
+        TCP_CHECK {									# 健康检查功能
+            connect_timeout 3
+            nb_get_retry 3
+			delay_before_retry 3
+            connect_port 80
+        }
+    }
+
+    real_server 192.168.56.12 80 {
+        weight 1
+        TCP_CHECK {
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+            connect_port 80
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在每个客户端的节点加入ARP的抑制&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ifconfig  lo:0 192.168.56.250/32 up
+route add -host 192.168.56.250 dev lo
+echo &amp;quot;1&amp;quot; &amp;gt;/proc/sys/net/ipv4/conf/lo/arp_ignore 
+echo &amp;quot;2&amp;quot; &amp;gt;/proc/sys/net/ipv4/conf/lo/arp_announce 
+echo &amp;quot;1&amp;quot; &amp;gt;/proc/sys/net/ipv4/conf/all/arp_ignore 
+echo &amp;quot;2&amp;quot; &amp;gt;/proc/sys/net/ipv4/conf/all/arp_announce 
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

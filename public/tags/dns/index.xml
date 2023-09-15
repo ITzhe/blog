@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>DNS on 菜菜的运维之路</title>
+        <link>https://caizhe.org/tags/dns/</link>
+        <description>Recent content in DNS on 菜菜的运维之路</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <lastBuildDate>Thu, 02 Aug 2018 17:44:11 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/dns/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Bind-DLZ</title>
+        <link>https://caizhe.org/p/bind-dlz/</link>
+        <pubDate>Thu, 02 Aug 2018 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/bind-dlz/</guid>
+        <description>&lt;p&gt;安装依赖：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install openssl-devel -y 
+yum groupinstall &amp;quot;Development Tools&amp;quot; -y
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;数据库安装：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install mariadb-server mariadb-devel -y
+systemctl start mariadb
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删掉一些空用户，否则会报错&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;delete from mysql.user where user=&#39;&#39;;
+create database bind;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;安装bind&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;tar xf bind-9.11.5.tar.gz
+cd bind-9.11.5/
+./configure --with-dlz-mysql --enable-largefile --enable-threads=no --prefix=/usr/local/bind --with-openssl 
+# 我试了开线程，但是会报错，所以还是单进程，对DNS的查询操作都是在从库，主库只负责写入和修改操作然后同步到从库，从库直接使用dns的配置文件，所以效率并不影响
+make -j 4
+make install
+groupadd -r named
+useradd -s /sbin/nologin -M -r -g named named
+chown -R named:named /usr/local/bind 
+echo &amp;quot;export PATH=${PATH}:/usr/local/bind/sbin/:/usr/local/bind/bin/&amp;quot; &amp;gt;&amp;gt; /etc/profile
+source /etc/profile
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;配置bind&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;cd /usr/local/bind/etc/
+rndc-confgen -r /dev/urandom &amp;gt;rndc.conf         #如果报错直接换成 rndc-confgen &amp;gt;rndc.conf
+mkdir /var/named/
+wget http://www.internic.net/domain/named.root      # 下载定义域服务节点
+chown -R named:named /var/named/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;创建配置文件 named.conf&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@linux-node3 etc]# cat named.conf 
+options {
+        directory &amp;quot;/var/named/&amp;quot;;
+        recursion yes;
+        listen-on port 53    { any; };
+        dump-file &amp;quot;/var/named/data/cache_dump.db&amp;quot;;
+        statistics-file &amp;quot;/var/named/data/named_stats.txt&amp;quot;;
+        allow-query { any; };
+        blackhole { none; };
+ };
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;启动并测试&#34;&gt;启动并测试&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;named -u named -n 1 -c /usr/local/bind/etc/named.conf
+netstat -lntup|grep 53
+dig www.baidu.com @127.0.0.1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;配置dlz&#34;&gt;配置DLZ&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;create database bind;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;建表&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;CREATE TABLE IF NOT EXISTS `dns_records` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `zone` varchar(255) NOT NULL,
+  `host` varchar(255) NOT NULL DEFAULT &#39;@&#39;,
+  `type` enum(&#39;A&#39;,&#39;MX&#39;,&#39;CNAME&#39;,&#39;NS&#39;,&#39;SOA&#39;,&#39;PTR&#39;,&#39;TXT&#39;,&#39;AAAA&#39;,&#39;SVR&#39;,&#39;URL&#39;) NOT NULL,
+  `data` varchar(255) DEFAULT NULL,
+  `ttl` int(11) NOT NULL DEFAULT &#39;3600&#39;,
+  `mx_priority` int(11) DEFAULT NULL,
+  `view`  enum(&#39;any&#39;, &#39;Telecom&#39;, &#39;Unicom&#39;, &#39;CMCC&#39;, &#39;ours&#39;) NOT NULL  DEFAULT &amp;quot;any&amp;quot; ,
+  `priority` tinyint UNSIGNED NOT NULL DEFAULT &#39;255&#39;,
+  `refresh` int(11) NOT NULL DEFAULT &#39;28800&#39;,
+  `retry` int(11) NOT NULL DEFAULT &#39;14400&#39;,
+  `expire` int(11) NOT NULL DEFAULT &#39;86400&#39;,
+  `minimum` int(11) NOT NULL DEFAULT &#39;86400&#39;,
+  `serial` bigint(20) NOT NULL DEFAULT &#39;2015050917&#39;,
+  `resp_person` varchar(64) NOT NULL DEFAULT &#39;ddns.net&#39;,
+  `primary_ns` varchar(64) NOT NULL DEFAULT &#39;ns.ddns.net.&#39;,
+  PRIMARY KEY (`id`),
+  KEY `type` (`type`),
+  KEY `host` (`host`),
+  KEY `zone` (`zone`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE `dns_xfr` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `zone` varchar(255) NOT NULL,
+  `client` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `zone` (`zone`),
+  KEY `client` (`client`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;创建用户&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;grant all privileges on bind.* to named@&#39;%&#39; identified by &amp;quot;named&amp;quot;;
+flush privileges;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;named.conf 配置DLZ&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;dlz &amp;quot;myzone&amp;quot; {
+        database &amp;quot;mysql
+           {host=192.168.56.11 port=3306 ssl=false dbname=bind user=named pass=named}
+           {SELECT zone FROM dns_records WHERE zone = &#39;$zone$&#39; LIMIT 1}
+           {SELECT ttl, type, mx_priority, IF(type = &#39;TXT&#39;, CONCAT(&#39;\&amp;quot;&#39;,data,&#39;\&amp;quot;&#39;), data) AS data FROM dns_records WHERE zone = &#39;$zone$&#39; AND host = &#39;$record$&#39; AND type &amp;lt;&amp;gt; &#39;
+SOA&#39; AND type &amp;lt;&amp;gt; &#39;NS&#39;}
+           {SELECT ttl, type, data, primary_ns, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = &#39;$zone$&#39; AND (type = &#39;SOA&#39; OR type=&#39;NS&#39;)
+}
+           {SELECT ttl, type, host, mx_priority, IF(type = &#39;TXT&#39;, CONCAT(&#39;\&amp;quot;&#39;,data,&#39;\&amp;quot;&#39;), data) AS data, resp_contact, serial, refresh, retry, expire, minimum FROM dns_reco
+rds WHERE zone = &#39;$zone$&#39; AND type &amp;lt;&amp;gt; &#39;SOA&#39;}
+           {SELECT zone FROM dns_xfr WHERE ( zone=&#39;$zone$&#39; OR zone=&#39;*&#39; ) AND client = &#39;$client$&#39; LIMIT 1}&amp;quot;;
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;插入数据：&lt;/p&gt;
+&lt;p&gt;dns_records：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;insert into bind.dns_records (zone, host, type, data, ttl) VALUES (&#39;test.info&#39;, &#39;www&#39;, &#39;A&#39;, &#39;1.1.1.1&#39;, &#39;60&#39;);
+insert into bind.dns_records (zone, host, type, data, ttl) VALUES (&#39;test.info&#39;, &#39;bbs&#39;, &#39;A&#39;, &#39;1.1.1.1&#39;, &#39;60&#39;);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;dns_xfr：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;1	*	10.31.63.30
+2	*	10.31.63.30
+3	*	192.168.56.12
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重启bind服务并重新测试&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;named -u named -n 1 -c /usr/local/bind/etc/named.conf 
+netstat -lntup|grep 53
+dig @127.0.0.1
+dig www.test.info @127.0.0.1
+dig bbs.test.info @127.0.0.1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;从库&#34;&gt;从库&lt;/h1&gt;
+&lt;p&gt;named.conf&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;options {
+        directory &amp;quot;/usr/local/bind/etc/&amp;quot;;
+        recursion yes;
+        listen-on port 53    { any; };
+        dump-file &amp;quot;/var/named/data/cache_dump.db&amp;quot;;
+        statistics-file &amp;quot;/var/named/data/named_stats.txt&amp;quot;;
+        allow-query { any; };
+ };
+
+key &amp;quot;rndc-key&amp;quot; {
+        algorithm hmac-md5;
+        secret &amp;quot;J+jRGi+v0DvKOoUoY6pWhQ==&amp;quot;;
+};
+
+controls {
+        inet 127.0.0.1 port 953
+        allow { any; } keys { &amp;quot;rndc-key&amp;quot;; };
+};
+
+include &amp;quot;/usr/local/bind/etc/view.conf&amp;quot;;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;view.conf&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;view &amp;quot;View&amp;quot; {
+    zone &amp;quot;.&amp;quot;  IN {
+    	type hint;
+    	file &amp;quot;named.root&amp;quot;;
+    };
+
+    zone &amp;quot;u.com&amp;quot; IN {
+         type    slave;
+         masters { 192.168.56.11; };
+         file    &amp;quot;slaves/u.com.zone&amp;quot;;
+    };
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;p&gt;附带一份企业级主库配置文件&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;options {
+        listen-on port 53 { any; };
+        listen-on-v6 port 53 { none; };
+        directory     &amp;quot;/usr/local/bind-dlz/var/named&amp;quot;;
+        dump-file     &amp;quot;/usr/local/bind-dlz/var/named/data/cache_dump.db&amp;quot;;
+        statistics-file &amp;quot;/usr/local/bind-dlz/var/named/data/named_stats.txt&amp;quot;;
+        memstatistics-file &amp;quot;/usr/local/bind-dlz/var/named/data/named_mem_stats.txt&amp;quot;;
+        //max-cache-size 1024m;
+        zone-statistics yes;
+        tcp-clients 80000;
+        stacksize   1000m;
+        clients-per-query   100000;
+        max-clients-per-query   100000;
+        recursion yes;
+        version &amp;quot;1.0.0&amp;quot;;
+        dnssec-enable no;
+        dnssec-validation no;
+        bindkeys-file &amp;quot;/etc/bind-dlz/named.iscdlv.key&amp;quot;;
+        managed-keys-directory &amp;quot;/usr/local/bind-dlz/var/named/dynamic&amp;quot;;
+        pid-file &amp;quot;/usr/local/bind-dlz/var/run/named.pid&amp;quot;;
+        session-keyfile &amp;quot;/usr/local/bind-dlz/var/run/session.key&amp;quot;;
+
+        masterfile-format text;
+        serial-query-rate 1000;
+        transfers-out 20000;
+        empty-zones-enable no;
+        request-ixfr no;
+
+        allow-update { none; };
+        allow-update-forwarding { none; };
+        allow-query     { any; };
+        allow-query-cache { any ;};
+        allow-transfer { slave_list; };
+        allow-recursion { any; };
+        #allow-recursion { any; };
+        notify yes;
+
+        allow-notify { slave_list; };
+
+        forwarders { 114.114.114.114;119.29.29.29; };
+
+};
+
+
+zone &amp;quot;.&amp;quot; IN {
+    type hint;
+    file &amp;quot;named.ca&amp;quot;;
+};
+
+include &amp;quot;/etc/bind-dlz/named.rfc1912.zones&amp;quot;;
+include &amp;quot;/etc/bind-dlz/named.root.key&amp;quot;;
+include &amp;quot;/etc/bind-dlz/rndc.key&amp;quot;;
+
+
+key &amp;quot;TSIG-key&amp;quot; {
+        algorithm hmac-md5;
+        secret &amp;quot;J+jRGi+v0DvKOoUoY6pWhQ==&amp;quot;;
+};
+
+controls {
+      inet 127.0.0.1 port 953
+      allow { any; } keys { &amp;quot;rndc-key&amp;quot;; };
+};
+
+statistics-channels {
+        inet 127.0.0.1 port 8653 allow { 127.0.0.1; };
+};
+
+################### log ########################
+logging {
+        channel default_debug {
+                file &amp;quot;data/named.run&amp;quot;;
+                severity dynamic;
+        };
+};
+
+
+################### acl ########################
+acl &amp;quot;lan_list&amp;quot; {
+        172.16.0.0/12;
+        192.168.0.0/16;
+        10.0.0.0/8;
+        127.0.0.1;
+};
+
+acl &amp;quot;slave_list&amp;quot; {
+        172.16.1.1;
+        172.16.1.252;
+        10.10.20.21;
+        10.10.20.22;
+        192.168.56.12;
+};
+
+
+
+################### zone ########################
+dlz &amp;quot;myzone&amp;quot; {
+        database &amp;quot;mysql
+           {host=192.168.56.11 port=3306 ssl=false dbname=bind user=named pass=named}
+           {SELECT zone FROM dns_records WHERE zone = &#39;$zone$&#39; LIMIT 1}
+           {SELECT ttl, type, mx_priority, IF(type = &#39;TXT&#39;, CONCAT(&#39;\&amp;quot;&#39;,data,&#39;\&amp;quot;&#39;), data) AS data FROM dns_records WHERE zone = &#39;$zone$&#39; AND host = &#39;$record$&#39; AND type &amp;lt;&amp;gt; &#39;SOA&#39; AND type &amp;lt;&amp;gt; &#39;NS&#39;}
+           {SELECT ttl, type, data, primary_ns, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = &#39;$zone$&#39; AND (type = &#39;SOA&#39; OR type=&#39;NS&#39;)}
+           {SELECT ttl, type, host, mx_priority, IF(type = &#39;TXT&#39;, CONCAT(&#39;\&amp;quot;&#39;,data,&#39;\&amp;quot;&#39;), data) AS data, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = &#39;$zone$&#39; AND type &amp;lt;&amp;gt; &#39;SOA&#39;}
+           {SELECT zone FROM dns_xfr WHERE ( zone=&#39;$zone$&#39; OR zone=&#39;*&#39; ) AND client = &#39;$client$&#39; LIMIT 1}&amp;quot;;
+};&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>安全 on 菜菜的运维之路</title>
+        <link>https://caizhe.org/tags/%E5%AE%89%E5%85%A8/</link>
+        <description>Recent content in 安全 on 菜菜的运维之路</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <lastBuildDate>Tue, 13 Mar 2018 10:59:21 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/%E5%AE%89%E5%85%A8/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Clamv</title>
+        <link>https://caizhe.org/p/clamv/</link>
+        <pubDate>Tue, 13 Mar 2018 10:59:21 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/clamv/</guid>
+        <description>&lt;p&gt;最近研究安全方向，发现Linux下的一些杀毒软件比较少，今天给大家介绍一款开源的轻量级杀毒软件clamAV。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;特点&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;1）GNU开源软件&lt;/p&gt;
+&lt;p&gt;　　2）快速扫描&lt;/p&gt;
+&lt;p&gt;　　3）可以检测35000种病毒，蠕早，特洛依，包括Microsoft Office文档及宏病毒&lt;/p&gt;
+&lt;p&gt;　　4）能够检测压缩文件（Zip RAR Tar Gzip Bzip2……）&lt;/p&gt;
+&lt;p&gt;　　5）强大的邮件扫描功能&lt;/p&gt;
+&lt;p&gt;　　6）扩展性强&lt;/p&gt;
+&lt;p&gt;1.时间同步&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ntpdate time1.aliyun.com
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;2.安装clamAV。（可以使用阿里云的epel源）&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install clamav
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;3.更新病毒库。（第一次下载可能会花点儿时间）&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; freshclam
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;4.测试：下载带病毒软件&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;wget http://www.eicar.org/download/eicar_com.zip
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;4.使用 clamscan 开始扫描&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;clamscan -r /etc/
+
+…………
+./.rnd: OK
+/eicar_com.zip: Eicar-Test-Signature FOUND
+./.cshrc: OK
+…………
+
+	----------- SCAN SUMMARY -----------
+Known viruses: 5748467
+Engine version: 0.99.2
+Scanned directories: 1
+Scanned files: 15
+Infected files: 1
+Data scanned: 0.10 MB
+Data read: 91.95 MB (ratio 0.00:1)
+Time: 19.179 sec (0 m 19 s)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以加上 &amp;ndash;remove 参数，扫描完之后直接杀掉病毒&lt;/p&gt;
+&lt;p&gt;可以加上定时任务每天定时扫描和更新病毒库,此处不再介绍&lt;/p&gt;
+&lt;p&gt;如果你发现了ClamVA查杀不了的病毒，可以在以下的网址提交相关的信息&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;  http://www.clamav.net/sendvirus.html 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;官方网址：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;  http://www.clamav.net/lang/en/
+  http://www.clamav.net/sendvirus.html&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

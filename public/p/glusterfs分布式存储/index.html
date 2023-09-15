@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='#volume卷
+分布式卷（distributed）文件通过hash算法随机分布到bricks组成的卷上
+复制式卷（replicated）类似raid1，replica数必须等于volume中brick所包含的存储服务器数。
+条带式卷（striped）类似raid0，strips数必须等于volume中brick所包含的存储服务器数，文件被分布成数据块，以round robin的方式存在bricks中，并发粒度是数据块，大文件性能好。
+分布式条带卷（distributed striped）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和条带式的功能。
+分布式复制卷（distributed replicated）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和复制卷的功能。
+#分布式卷
+加入存储池
+[root@mystorage1 ~]# gluster peer probe mystorage2peer probe: success. [root@mystorage1 ~]# gluster peer probe mystorage3peer probe: success. [root@mystorage1 ~]# gluster peer probe mystorage4peer probe: success. 在其他节点检查
+[root@mystorage4 ~]# gluster peer statusNumber of Peers: 3Hostname: mystorage1Uuid: 429d3353-dbcc-47d7-b3b5-4c3267fa26dfState: Peer in Cluster (Connected)Hostname: mystorage3Uuid: 7c14cd1f-e801-48ca-8f23-09b017537400State: Peer in Cluster (Connected)Hostname: mystorage2Uuid: 14b4575a-2ba3-496b-96ea-9a4fe60819b3State: Peer in Cluster (Connected)初始化'>
+<title>Glusterfs分布式存储</title>
+
+<link rel='canonical' href='https://caizhe.org/p/glusterfs%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8/'>
+
+<link rel="stylesheet" href="/scss/style.min.5be32ca3f6e1a997c75795c4359147cc6d4fbd34948c0acd51e31d237033978a.css"><meta property='og:title' content='Glusterfs分布式存储'>
+<meta property='og:description' content='#volume卷
+分布式卷（distributed）文件通过hash算法随机分布到bricks组成的卷上
+复制式卷（replicated）类似raid1，replica数必须等于volume中brick所包含的存储服务器数。
+条带式卷（striped）类似raid0，strips数必须等于volume中brick所包含的存储服务器数，文件被分布成数据块，以round robin的方式存在bricks中，并发粒度是数据块，大文件性能好。
+分布式条带卷（distributed striped）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和条带式的功能。
+分布式复制卷（distributed replicated）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和复制卷的功能。
+#分布式卷
+加入存储池
+[root@mystorage1 ~]# gluster peer probe mystorage2peer probe: success. [root@mystorage1 ~]# gluster peer probe mystorage3peer probe: success. [root@mystorage1 ~]# gluster peer probe mystorage4peer probe: success. 在其他节点检查
+[root@mystorage4 ~]# gluster peer statusNumber of Peers: 3Hostname: mystorage1Uuid: 429d3353-dbcc-47d7-b3b5-4c3267fa26dfState: Peer in Cluster (Connected)Hostname: mystorage3Uuid: 7c14cd1f-e801-48ca-8f23-09b017537400State: Peer in Cluster (Connected)Hostname: mystorage2Uuid: 14b4575a-2ba3-496b-96ea-9a4fe60819b3State: Peer in Cluster (Connected)初始化'>
+<meta property='og:url' content='https://caizhe.org/p/glusterfs%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8/'>
+<meta property='og:site_name' content='菜菜的运维之路'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='高可用' /><meta property='article:tag' content='存储' /><meta property='article:published_time' content='2019-09-13T10:59:21&#43;08:00'/><meta property='article:modified_time' content='2019-09-13T10:59:21&#43;08:00'/>
+<meta name="twitter:title" content="Glusterfs分布式存储">
+<meta name="twitter:description" content="#volume卷
+分布式卷（distributed）文件通过hash算法随机分布到bricks组成的卷上
+复制式卷（replicated）类似raid1，replica数必须等于volume中brick所包含的存储服务器数。
+条带式卷（striped）类似raid0，strips数必须等于volume中brick所包含的存储服务器数，文件被分布成数据块，以round robin的方式存在bricks中，并发粒度是数据块，大文件性能好。
+分布式条带卷（distributed striped）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和条带式的功能。
+分布式复制卷（distributed replicated）volume中brick所包含的存储服务器数必须是stripe的倍数（&amp;gt;=2倍），兼顾分布式和复制卷的功能。
+#分布式卷
+加入存储池
+[root@mystorage1 ~]# gluster peer probe mystorage2peer probe: success. [root@mystorage1 ~]# gluster peer probe mystorage3peer probe: success. [root@mystorage1 ~]# gluster peer probe mystorage4peer probe: success. 在其他节点检查
+[root@mystorage4 ~]# gluster peer statusNumber of Peers: 3Hostname: mystorage1Uuid: 429d3353-dbcc-47d7-b3b5-4c3267fa26dfState: Peer in Cluster (Connected)Hostname: mystorage3Uuid: 7c14cd1f-e801-48ca-8f23-09b017537400State: Peer in Cluster (Connected)Hostname: mystorage2Uuid: 14b4575a-2ba3-496b-96ea-9a4fe60819b3State: Peer in Cluster (Connected)初始化">
+    <link rel="shortcut icon" href="logo.ico" />
+
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/Bob-log-150x150_hu703c3f72dde55974625e11e7393158f0_3014_300x0_resize_q75_box.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🍥</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">菜菜的运维之路</a></h1>
+            <h2 class="site-description">大道至简，真实而简洁</h2>
+        </div>
+    </header><ol class="social-menu">
+            
+                <li>
+                    <a 
+                        href='https://github.com/ITzhe/blog'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%8F%8B%E6%83%85%E9%93%BE%E6%8E%A5/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>友情链接</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+                <li id="i18n-switch">  
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M4 5h7" />
+  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
+  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
+  <path d="M12 20l4 -9l4 9" />
+  <path d="M19.1 18h-6.2" />
+</svg>
+
+
+
+                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
+                        
+                            <option value="https://caizhe.org/" selected>中文</option>
+                        
+                            <option value="https://caizhe.org/en/" >English</option>
+                        
+                            <option value="https://caizhe.org/ar/" >عربي</option>
+                        
+                    </select>
+                </li>
+            
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <span>暗色模式</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+
+    
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/glusterfs%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8/">Glusterfs分布式存储</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Sep 13, 2019</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 3 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <p>#volume卷</p>
+<p>分布式卷（distributed）文件通过hash算法随机分布到bricks组成的卷上</p>
+<p>复制式卷（replicated）类似raid1，replica数必须等于volume中brick所包含的存储服务器数。</p>
+<p>条带式卷（striped）类似raid0，strips数必须等于volume中brick所包含的存储服务器数，文件被分布成数据块，以round robin的方式存在bricks中，并发粒度是数据块，大文件性能好。</p>
+<p>分布式条带卷（distributed striped）volume中brick所包含的存储服务器数必须是stripe的倍数（&gt;=2倍），兼顾分布式和条带式的功能。</p>
+<p><strong>分布式复制卷</strong>（distributed replicated）volume中brick所包含的存储服务器数必须是stripe的倍数（&gt;=2倍），兼顾分布式和复制卷的功能。</p>
+<p>#分布式卷</p>
+<p>加入存储池</p>
+<pre><code>[root@mystorage1 ~]# gluster peer probe mystorage2
+peer probe: success. 
+[root@mystorage1 ~]# gluster peer probe mystorage3
+peer probe: success. 
+[root@mystorage1 ~]# gluster peer probe mystorage4
+peer probe: success. 
+</code></pre>
+<p>在其他节点检查</p>
+<pre><code>[root@mystorage4 ~]# gluster peer status
+Number of Peers: 3
+
+Hostname: mystorage1
+Uuid: 429d3353-dbcc-47d7-b3b5-4c3267fa26df
+State: Peer in Cluster (Connected)
+
+Hostname: mystorage3
+Uuid: 7c14cd1f-e801-48ca-8f23-09b017537400
+State: Peer in Cluster (Connected)
+
+Hostname: mystorage2
+Uuid: 14b4575a-2ba3-496b-96ea-9a4fe60819b3
+State: Peer in Cluster (Connected)
+</code></pre>
+<p>初始化</p>
+<pre><code>yum install xfsprogs -y
+mkfs.xfs -f /dev/sdb
+mkdir -p /storage/brick1
+mount /dev/sdb /storage/brick1/
+echo &quot;/dev/sdb /storage/brick1/  xfs defaults 0 0&quot; &gt;&gt; /etc/fstab 
+mount -a
+</code></pre>
+<p>创建卷（整合磁盘）</p>
+<pre><code>[root@mystorage1 ~]# gluster volume create gv1 mystorage1:/storage/brick1/ mystorage2:/storage/brick1/ force 
+volume create: gv1: success: please start the volume to access data
+</code></pre>
+<p>启动卷</p>
+<pre><code>[root@mystorage1 ~]# gluster volume start gv1
+volume start: gv1: success
+[root@mystorage4 ~]# gluster volume gv1 info
+</code></pre>
+<p>挂载卷</p>
+<pre><code>[root@mystorage3 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage3 ~]# df -h
+…………
+127.0.0.1:/gv1   20G   65M   20G   1% /mnt
+</code></pre>
+<p>把刚才1和2的卷整合在一起之后，共享出来，然后3挂在到gv1种</p>
+<p>测试</p>
+<pre><code>[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage4 ~]# mv d4 /mnt/
+[root@mystorage1 ~]# mount -t glusterfs 127.0.0.1:/gv1 /mnt/
+[root@mystorage1 ~]# ls /mnt/
+d4
+</code></pre>
+<p>#分布式复制卷</p>
+<pre><code>[root@mystorage2 ~]# gluster volume create gv2 replica 2 mystorage3:/storage/brick1/ mystorage4:/storage/brick1/ force 
+volume create: gv2: success: please start the volume to access data
+
+[root@mystorage2 ~]# gluster volume info gv2
+
+Volume Name: gv2
+Type: Replicate
+Volume ID: 42949fc2-4400-4637-84c7-28aafed7676e
+Status: Created
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: mystorage3:/storage/brick1
+Brick2: mystorage4:/storage/brick1
+Options Reconfigured:
+performance.readdir-ahead: on
+[root@mystorage1 ~]# gluster volume restart gv2
+volume start: gv2: success
+[root@mystorage1 ~]# df -h
+…… ………
+127.0.0.1:/gv1   20G   65M   20G   1% /mnt
+127.0.0.1:/gv2   10G   33M   10G   1% /opt
+</code></pre>
+<p>总结：分布巻就像RAID0一样，是一份数据写在了两个地方，把一个数据打散了；而复制卷就像RAID1一样，把一份数据写在了多份。</p>
+<pre><code>mkfs.xfs -f /dev/sdc
+mkdir -p /storage/brick2
+mount /dev/sdc /storage/brick2
+echo &quot;/dev/sdc /storage/brick2/  xfs defaults 0 0&quot; &gt;&gt; /etc/fstab 
+df -h
+#gluster volume create gv3 stripe 2 mystorage3:/storage/brick2/ mystorage4:/storage/brick2 force
+gluster volume start gv3
+mkdir /gv1 /gv2 /gv3
+
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv1 /gv1
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv2 /gv2
+[root@mystorage4 ~]# mount -t glusterfs 127.0.0.1:gv3 /gv3
+[root@mystorage4 ~]# dd if=/dev/zero bs=1024 count=10000 of=/gv3/10M.file
+[root@mystorage4 ~]# dd if=/dev/zero bs=1024 count=20000 of=/gv3/20M.file
+[root@mystorage4 gv3]# ll -h
+total 30M
+-rw-r--r--. 1 root root 9.8M Dec 27 12:19 10M.file
+-rw-r--r--. 1 root root  20M Dec 27 12:19 20M.file
+[root@mystorage4 gv3]# ll /storage/brick2/ -h
+total 15M
+-rw-r--r--. 2 root root 4.9M Dec 27 12:19 10M.file
+-rw-r--r--. 2 root root 9.8M Dec 27 12:19 20M.file
+</code></pre>
+<p>注意看大小</p>
+<pre><code>[root@mystorage3 ~]# mkdir /gv1 /gv2 /gv3
+[root@mystorage3 ~]# mount -t glusterfs 127.0.0.1:gv3 /gv3
+
+[root@mystorage3 ~]# ll /gv3/
+total 30000
+-rw-r--r--. 1 root root 10240000 Dec 27 12:19 10M.file
+-rw-r--r--. 1 root root 20480000 Dec 27 12:19 20M.file
+[root@mystorage3 ~]# ll /storage/brick2/
+total 15032
+-rw-r--r--. 2 root root  5128192 Dec 27 12:19 10M.file
+-rw-r--r--. 2 root root 10256384 Dec 27 12:19 20M.file
+</code></pre>
+<p>注意看大小</p>
+<p>#增加/删除磁盘</p>
+<pre><code>[root@mystorage3 ~]# gluster volume stop gv2
+Stopping volume will make its data inaccessible. Do you want to continue? (y/n) y
+volume stop: gv2: success
+[root@mystorage3 ~]# gluster volume add-brick gv2 replica 2 mystorage1:/storage/brick2/ mystorage2:/storage/brick2 force
+volume add-brick: success
+[root@mystorage3 ~]# gluster volume start gv2
+volume start: gv2: success
+[root@mystorage4 gv3]# umount /gv2
+[root@mystorage4 gv3]# mount -t glusterfs 127.0.0.1:gv2 /gv2
+</code></pre>
+<p>扩容之后还需要磁盘平衡，否则是无法再新加入的磁盘中写入数据的</p>
+<pre><code>[root@mystorage4 gv2]# gluster volume rebalance gv2 start	
+[root@mystorage4 gv2]# gluster volume rebalance gv2 status
+</code></pre>
+<p>注意：增加的brick必须是存储节点的倍数，例如reolica为2，你增加的数量必须是2 4 6 8 ……</p>
+<pre><code>gluster volume stop gv2
+gluster volume remove-brick gv2 replica 2 mystorage1:/storage/brick2/ mystorage2:/storage/brick2 force
+</code></pre>
+<p>#删除卷
+umoun gv1
+gluster volume stop gv1
+gluster volume delete gv1</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/">高可用</a>
+        
+            <a href="/tags/%E5%AD%98%E5%82%A8/">存储</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    <div class="disqus-container">
+    <div id="disqus_thread"></div>
+<script type="application/javascript">
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "hugo-theme-stack" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+<style>
+    .disqus-container {
+        background-color: var(--card-background);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--shadow-l1);
+        padding: var(--card-padding);
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (typeof DISQUS == 'object') {
+            DISQUS.reset({
+                reload: true
+            });
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2020 - 
+        
+        2023 菜菜的运维之路
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.16.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

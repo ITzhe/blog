@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>KVM on 菜菜的运维之路</title>
+        <link>https://caizhe.org/tags/kvm/</link>
+        <description>Recent content in KVM on 菜菜的运维之路</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <lastBuildDate>Mon, 02 May 2016 17:44:11 +0800</lastBuildDate><atom:link href="https://caizhe.org/tags/kvm/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>KVM虚拟机</title>
+        <link>https://caizhe.org/p/kvm%E8%99%9A%E6%8B%9F%E6%9C%BA/</link>
+        <pubDate>Mon, 02 May 2016 17:44:11 +0800</pubDate>
+        
+        <guid>https://caizhe.org/p/kvm%E8%99%9A%E6%8B%9F%E6%9C%BA/</guid>
+        <description>&lt;p&gt;最近闲着无聊，对比了docker和KVM，发现docker很厉害啊，未来的成长空间非常不错，但是目前还是有些不足，比如一些对于隔离的效果不是很好，再等两年成熟之后再去研究，现在感觉还是KVM比较实用，玩了玩整理了份文档，供大家分享：&lt;/p&gt;
+&lt;p&gt;###基础环境
+[root@localhost ~]# cat /etc/redhat-release
+CentOS Linux release 7.1.1503 (Core)
+[root@localhost ~]# uname -r
+3.10.0-229.el7.x86_64&lt;/p&gt;
+&lt;p&gt;###查看是否支持&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;grep -E &#39;(vmx|svm)&#39; /proc/cpuinfo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;###安装&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;yum install qemu-kvm libvirt libvirt-python libguestfs-tools virt-install qemu-kvm-toools virt-manager
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;###启动&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;systemctl start libvirtd
+systemctl status libvirtd
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;###创建虚拟机&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;qemu-img create -f raw Centos-7.raw 10G		#在当前目录创建一个格式为raw的空的虚拟机，大小为10G
+
+virt-install --name Centos-7 --ram 1024 --vcpus=1 --disk path=Centos-7.raw --cdrom=CentOS-7-x86_64-DVD-1503-01_2.iso  --graphics vnc,listen=0.0.0.0 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;使用VNC工具连接到主机即可（安装操作系统这里不再介绍）&lt;/p&gt;
+&lt;p&gt;查看运行中的虚拟机&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh list --all
+
+ Id    Name                           State
+----------------------------------------------------
+ 7     Centos-7                       running
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看虚拟机的详细信息&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@localhost media]# virsh dominfo  Centos-7
+Id:             7
+Name:           Centos-7
+UUID:           544cdb00-6c2c-4c93-9e11-086920b89320
+OS Type:        hvm
+State:          running
+CPU(s):         1
+CPU time:       46.9s
+Max memory:     1048576 KiB
+Used memory:    1048576 KiB
+Persistent:     yes
+Autostart:      disable
+Managed save:   no
+Security model: none
+Security DOI:   0	
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;##KVM的扩容与缩容&lt;/p&gt;
+&lt;p&gt;####内存&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh setmem Centos-7 512M
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;####硬盘&lt;/p&gt;
+&lt;p&gt;硬盘也可以动态扩容、缩容，但是笔者经验不建议，可能丢失数据，如果数据硬盘不够了，再重新添加一块硬盘。&lt;/p&gt;
+&lt;p&gt;##格式转换&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;[root@linux-node2 opt]# qemu-img convert -f raw -O qcow2 Centos-7.raw Centos-7.qcow2
+
+[root@linux-node2 opt]# ll -h Centos-7.*
+-rw-r--r-- 1 root root 1017M May  4 16:18 Centos-7.qcow2
+-rw-r--r-- 1 qemu qemu   10G May  4 16:11 Centos-7.raw
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;#RAW与QCOW2优缺点：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;raw格式是最原始的一种格式，特点是I/O性能最好的一种格式，没有之一，缺点就是功能很少，有很多快照、加密、压缩都不支持，而且特别大，最开始制定10G就占用10G的空间。
+qcow2与raw相反，功能很多，支持快照、加密、压缩，而且占用资源小，在原始的镜像上面只保留修改的部分，但是性能差于raw。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;##让虚拟机桥接到物理网卡&lt;/p&gt;
+&lt;p&gt;此时的虚拟机还不能上网，仅仅是运行了一个系统，要想上网进行如下操作：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;brctl addbr br0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;模拟出一块网卡名字为 br0&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;brctl addif br0 eth0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;桥接到eth0，注意，这样会离开断开与服务器的连接，因为服务器的eth0是没有IP地址的&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; ip addr del dev eth0 192.168.56.11/24
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;删除原eth0的IP地址&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ifconfig br0 192.168.56.11/24 up
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;此时虽然连上了服务器，但是任然不能上网，因为路由不对，添加以下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;route add default gw 1.1.1.1（网关地址）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;现在会断开与KVM虚拟机的连接，没关系，修改虚拟机的XML文件：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh edit Centos-7		#修改为以下两行
+
+     &amp;lt;interface type=&#39;bridge&#39;&amp;gt;
+       &amp;lt;source bridge=&#39;br0&#39;/&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重启一下&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh  reboot Centos-7
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后配置IP地址、网关、DNS等即可连接上网，此处不再演示&lt;/p&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;p&gt;附带一些常用命令：&lt;/p&gt;
+&lt;p&gt;开机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh start test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;关机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh shutdown test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;强制关机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh destroy test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;重新启动：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh reboot test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;通过配置文档启动主机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh create /etc/libvirt/qemu/test1.xml
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看主机状态：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh list --all
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;停止/挂机虚拟机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh suspend test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;保存虚拟机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh save test1  
+或者
+virsh dumpxml Centos-7 &amp;gt; dump_kvm.xml
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;还原虚拟机：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh resume test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;p&gt;#快照功能&lt;/p&gt;
+&lt;p&gt;默认快照文件放在 /var/lib/libvirt/qemu/snapshot/&lt;/p&gt;
+&lt;p&gt;拍摄快照：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh snapshot-create test1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看快照：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh snapshot-list test1
+
+	 Name                 Creation Time             State
+------------------------------------------------------------
+ 1486394873           2017-02-06 23:27:53 +0800 shutoff				#上次快照
+ 1486394993           2017-02-06 23:29:53 +0800 shutoff				#这次快照
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;恢复快照：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh snapshot-revert test1 1486394873
+&lt;/code&gt;&lt;/pre&gt;
+&lt;hr&gt;
+&lt;hr&gt;
+&lt;p&gt;例1：修改CPU数量&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh edit Centos-7
+
+&amp;lt;vcpu placement=&#39;auto&#39; current=&#39;1&#39;&amp;gt;4&amp;lt;/vcpu&amp;gt;						#CPU上限是4个，目前是一个
+
+virsh setvcpus Centos-7 2 --live								#也可以使用--config参数
+virsh reboot  Centos-7											#重启可选
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;例2：添加硬盘&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;qemu-img create -f qcow2 add.img 20G
+
+virsh attach-disk Centos-7 /opt/add.img sdb					#添加一块硬盘（热添加，重启失效）
+
+virsh edit Centos-7											#写入配置文件
+	…………
+    &amp;lt;/disk&amp;gt;
+&amp;lt;disk type=&#39;file&#39; device=&#39;disk&#39;&amp;gt;
+  &amp;lt;driver name=&#39;qemu&#39; type=&#39;qcow2&#39; cache=&#39;none&#39;/&amp;gt;
+  &amp;lt;source file=&#39;/opt/add.img&#39;/&amp;gt;
+  &amp;lt;target dev=&#39;sdb&#39; bus=&#39;virtio&#39;/&amp;gt;
+  &amp;lt;address type=&#39;pci&#39; domain=&#39;0x0000&#39; bus=&#39;0x00&#39; slot=&#39;0x06&#39; function=&#39;0x0&#39;/&amp;gt;
+&amp;lt;/disk&amp;gt;
+
+virsh reboot Centos-7
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;后来我有找到更简单的一种方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;virsh attach-disk Centos-7 /opt/add.img sdb --config&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

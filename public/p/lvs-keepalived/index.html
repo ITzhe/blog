@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='最近闲着无聊复习了一下高可用Keepalive和LVS反向代理，觉的挺经典的，整理了一篇文档
+在部署之前，我们先对LVS的一些基础知识了解一下
+#LVS的模式
+###NAT模式
+NAT用法本来是因为网络IP地址不足而把内部保留IP地址通过映射转换成公网地址的一种上网方式(原地址NAT)｡如果把NAT的过程稍微变化,就可以成为负载均衡的一种方式｡原理其实就是把从客户端发来的IP包的IP头目的地址在DR上换成其中一台REALSERVER的IP地址并发至此REALSERVER,而REALSERVER则在处理完成后把数据经过DR主机发回给客户端,DR在这个时候再把数据包的原IP地址改为DR接口上的IP地址即可｡期间,无论是进来的流量,还是出去的流量,都必须经过DR｡
+###FULLNAT 模式
+###TUNNEL模式
+隧道模式则类似于VPN的方式,使用网络分层的原理,在从客户端发来的数据包的基础上,封装一个新的IP头标记(不完整的IP头,只有目的IP部)发给REALSERVER,REALSERVER收到后,先把DR发过来的数据包的头给解开,还原其数据包原样,处理后,直接返回给客户端,而不需要再经过DR｡需要注意的是,由于REALSERVER需要对DR发过来的数据包进行还原,也就是说必须支持IPTUNNEL协议｡所以,在REALSERVER的内核中,必须编译支持IPTUNNEL这个选项｡IPTUNNEL也在Net working options里面｡
+###DR模式
+直接路由模式比较特别,很难说和什么方面相似,前2种模式基本上都是工作在网络层上(三层),而直接路由模式则应该是工作在数据链路层上(二层)｡其原理为,DR和REALSERVER都使用同一个IP对外服务｡但只有DR对ARP请求进行响应,所有REALSERVER对本身这个IP的ARP请求保持静默｡也就是说,网关会把对这个服务IP的请求全部定向给DR,而DR收到数据包后根据调度算法,找出对应的REALSERVER,把目的MAC地址改为REALSERVER的MAC并发给这台REALSERVER｡这时REALSERVER收到这个数据包,则等于直接从客户端收到这个数据包无异,处理后直接返回给客户端｡由于DR要对二层包头进行改换,所以DR和REALSERVER之间必须在一个广播域,也可以简单的理解为在同一台交换机上｡
+#LVS的算法
+###轮叫调度(Round-RobinScheduling)
+调度器通过&amp;quot;轮叫&amp;quot;调度算法将外部请求按顺序轮流分配到集群中的真实服务器上,它均等地对待每一台服务器,而不管服务器上实际的连接数和系统负载｡
+###加权轮叫调度(WeightedRound-RobinScheduling)
+调度器通过&amp;quot;加权轮叫&amp;quot;调度算法根据真实服务器的不同处理能力来调度访问请求｡这样可以保证处理能力强的服务器处理更多的访问流量｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值｡
+###最小连接调度(Least-ConnectionScheduling)
+调度器通过&amp;quot;最少连接&amp;quot;调度算法动态地将网络请求调度到已建立的链接数最少的服务器上｡如果集群系统的真实服务器具有相近的系统性能,采用&amp;quot;最小连接&amp;quot;调度算法可以较好地均衡负载｡
+###加权最小连接调度(WeightedLeast-ConnectionScheduling)
+在集群系统中的服务器性能差异较大的情况下,调度器采用&amp;quot;加权最少链接&amp;quot;调度算法优化负载均衡性能,具有较高权值的服务器将承受较大比例的活动连接负载｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值
+###基于局部性的最少链接(Locality-BasedLeastConnectionsScheduling)
+基于局部性的最少链接&amp;quot;调度算法是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡该算法根据请求的目标IP地址找出该目标IP地址最近使用的服务器,若该服务器是可用的且没有超载,将请求发送到该服务器;若服务器不存在,或者该服务器超载且有服务器处于一半的工作负载,则用&amp;quot;最少链接&amp;quot;的原则选出一个可用的服务器,将请求发送到该服务器｡
+###带复制的基于局部性最少链接(Locality-BasedLeastConnectionswithReplicationScheduling)
+带复制的基于局部性最少链接&amp;quot;调度算法也是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡它与LBLC算法的不同之处是它要维护从一个目标IP地址到一组服务器的映射,而LBLC算法维护从一个目标IP地址到一台服务器的映射｡该算法根据请求的目标IP地址找出该目标IP地址对应的服务器组,按&amp;quot;最小连接&amp;quot;原则从服务器组中选出一台服务器,若服务器没有超载,将请求发送到该服务器,若服务器超载;则按&amp;quot;最小连接&amp;quot;原则从这个集群中选出一台服务器,将该服务器加入到服务器组中,将请求发送到该服务器｡同时,当该服务器组有一段时间没有被修改,将最忙的服务器从服务器组中删除,以降低复制的程度
+###目标地址散列调度(DestinationHashingScheduling)
+目标地址散列&amp;quot;调度算法根据请求的目标IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空
+###源地址散列调度(SourceHashingScheduling)
+源地址散列&amp;quot;调度算法根据请求的源IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空｡
+yum install keepalived ipvsadm#keepalive高可用
+vim /etc/keepalived/keepalived.conf
+! Configuration File for keepalivedglobal_defs {notification_email {acassen@firewall.locfailover@firewall.locsysadmin@firewall.loc}notification_email_from Alexandre.Cassen@firewall.locsmtp_server 127.0.0.1smtp_connect_timeout 30router_id LVS-BACKUP}vrrp_instance VI_1 {	#实例的IDstate BACKUP	#主节点为MASTERinterface eth0virtual_router_id 51	# ID一定要统一两边priority 50	# 备节点一定要低于主节点advert_int 1authentication {	auth_type PASSauth_pass 1111}virtual_ipaddress {	192.'>
+<title>LVS&#43;KeepAlived</title>
+
+<link rel='canonical' href='https://caizhe.org/p/lvs-keepalived/'>
+
+<link rel="stylesheet" href="/scss/style.min.5be32ca3f6e1a997c75795c4359147cc6d4fbd34948c0acd51e31d237033978a.css"><meta property='og:title' content='LVS&#43;KeepAlived'>
+<meta property='og:description' content='最近闲着无聊复习了一下高可用Keepalive和LVS反向代理，觉的挺经典的，整理了一篇文档
+在部署之前，我们先对LVS的一些基础知识了解一下
+#LVS的模式
+###NAT模式
+NAT用法本来是因为网络IP地址不足而把内部保留IP地址通过映射转换成公网地址的一种上网方式(原地址NAT)｡如果把NAT的过程稍微变化,就可以成为负载均衡的一种方式｡原理其实就是把从客户端发来的IP包的IP头目的地址在DR上换成其中一台REALSERVER的IP地址并发至此REALSERVER,而REALSERVER则在处理完成后把数据经过DR主机发回给客户端,DR在这个时候再把数据包的原IP地址改为DR接口上的IP地址即可｡期间,无论是进来的流量,还是出去的流量,都必须经过DR｡
+###FULLNAT 模式
+###TUNNEL模式
+隧道模式则类似于VPN的方式,使用网络分层的原理,在从客户端发来的数据包的基础上,封装一个新的IP头标记(不完整的IP头,只有目的IP部)发给REALSERVER,REALSERVER收到后,先把DR发过来的数据包的头给解开,还原其数据包原样,处理后,直接返回给客户端,而不需要再经过DR｡需要注意的是,由于REALSERVER需要对DR发过来的数据包进行还原,也就是说必须支持IPTUNNEL协议｡所以,在REALSERVER的内核中,必须编译支持IPTUNNEL这个选项｡IPTUNNEL也在Net working options里面｡
+###DR模式
+直接路由模式比较特别,很难说和什么方面相似,前2种模式基本上都是工作在网络层上(三层),而直接路由模式则应该是工作在数据链路层上(二层)｡其原理为,DR和REALSERVER都使用同一个IP对外服务｡但只有DR对ARP请求进行响应,所有REALSERVER对本身这个IP的ARP请求保持静默｡也就是说,网关会把对这个服务IP的请求全部定向给DR,而DR收到数据包后根据调度算法,找出对应的REALSERVER,把目的MAC地址改为REALSERVER的MAC并发给这台REALSERVER｡这时REALSERVER收到这个数据包,则等于直接从客户端收到这个数据包无异,处理后直接返回给客户端｡由于DR要对二层包头进行改换,所以DR和REALSERVER之间必须在一个广播域,也可以简单的理解为在同一台交换机上｡
+#LVS的算法
+###轮叫调度(Round-RobinScheduling)
+调度器通过&amp;quot;轮叫&amp;quot;调度算法将外部请求按顺序轮流分配到集群中的真实服务器上,它均等地对待每一台服务器,而不管服务器上实际的连接数和系统负载｡
+###加权轮叫调度(WeightedRound-RobinScheduling)
+调度器通过&amp;quot;加权轮叫&amp;quot;调度算法根据真实服务器的不同处理能力来调度访问请求｡这样可以保证处理能力强的服务器处理更多的访问流量｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值｡
+###最小连接调度(Least-ConnectionScheduling)
+调度器通过&amp;quot;最少连接&amp;quot;调度算法动态地将网络请求调度到已建立的链接数最少的服务器上｡如果集群系统的真实服务器具有相近的系统性能,采用&amp;quot;最小连接&amp;quot;调度算法可以较好地均衡负载｡
+###加权最小连接调度(WeightedLeast-ConnectionScheduling)
+在集群系统中的服务器性能差异较大的情况下,调度器采用&amp;quot;加权最少链接&amp;quot;调度算法优化负载均衡性能,具有较高权值的服务器将承受较大比例的活动连接负载｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值
+###基于局部性的最少链接(Locality-BasedLeastConnectionsScheduling)
+基于局部性的最少链接&amp;quot;调度算法是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡该算法根据请求的目标IP地址找出该目标IP地址最近使用的服务器,若该服务器是可用的且没有超载,将请求发送到该服务器;若服务器不存在,或者该服务器超载且有服务器处于一半的工作负载,则用&amp;quot;最少链接&amp;quot;的原则选出一个可用的服务器,将请求发送到该服务器｡
+###带复制的基于局部性最少链接(Locality-BasedLeastConnectionswithReplicationScheduling)
+带复制的基于局部性最少链接&amp;quot;调度算法也是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡它与LBLC算法的不同之处是它要维护从一个目标IP地址到一组服务器的映射,而LBLC算法维护从一个目标IP地址到一台服务器的映射｡该算法根据请求的目标IP地址找出该目标IP地址对应的服务器组,按&amp;quot;最小连接&amp;quot;原则从服务器组中选出一台服务器,若服务器没有超载,将请求发送到该服务器,若服务器超载;则按&amp;quot;最小连接&amp;quot;原则从这个集群中选出一台服务器,将该服务器加入到服务器组中,将请求发送到该服务器｡同时,当该服务器组有一段时间没有被修改,将最忙的服务器从服务器组中删除,以降低复制的程度
+###目标地址散列调度(DestinationHashingScheduling)
+目标地址散列&amp;quot;调度算法根据请求的目标IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空
+###源地址散列调度(SourceHashingScheduling)
+源地址散列&amp;quot;调度算法根据请求的源IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空｡
+yum install keepalived ipvsadm#keepalive高可用
+vim /etc/keepalived/keepalived.conf
+! Configuration File for keepalivedglobal_defs {notification_email {acassen@firewall.locfailover@firewall.locsysadmin@firewall.loc}notification_email_from Alexandre.Cassen@firewall.locsmtp_server 127.0.0.1smtp_connect_timeout 30router_id LVS-BACKUP}vrrp_instance VI_1 {	#实例的IDstate BACKUP	#主节点为MASTERinterface eth0virtual_router_id 51	# ID一定要统一两边priority 50	# 备节点一定要低于主节点advert_int 1authentication {	auth_type PASSauth_pass 1111}virtual_ipaddress {	192.'>
+<meta property='og:url' content='https://caizhe.org/p/lvs-keepalived/'>
+<meta property='og:site_name' content='菜菜的运维之路'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='高可用' /><meta property='article:published_time' content='2017-09-13T10:59:21&#43;08:00'/><meta property='article:modified_time' content='2017-09-13T10:59:21&#43;08:00'/>
+<meta name="twitter:title" content="LVS&#43;KeepAlived">
+<meta name="twitter:description" content="最近闲着无聊复习了一下高可用Keepalive和LVS反向代理，觉的挺经典的，整理了一篇文档
+在部署之前，我们先对LVS的一些基础知识了解一下
+#LVS的模式
+###NAT模式
+NAT用法本来是因为网络IP地址不足而把内部保留IP地址通过映射转换成公网地址的一种上网方式(原地址NAT)｡如果把NAT的过程稍微变化,就可以成为负载均衡的一种方式｡原理其实就是把从客户端发来的IP包的IP头目的地址在DR上换成其中一台REALSERVER的IP地址并发至此REALSERVER,而REALSERVER则在处理完成后把数据经过DR主机发回给客户端,DR在这个时候再把数据包的原IP地址改为DR接口上的IP地址即可｡期间,无论是进来的流量,还是出去的流量,都必须经过DR｡
+###FULLNAT 模式
+###TUNNEL模式
+隧道模式则类似于VPN的方式,使用网络分层的原理,在从客户端发来的数据包的基础上,封装一个新的IP头标记(不完整的IP头,只有目的IP部)发给REALSERVER,REALSERVER收到后,先把DR发过来的数据包的头给解开,还原其数据包原样,处理后,直接返回给客户端,而不需要再经过DR｡需要注意的是,由于REALSERVER需要对DR发过来的数据包进行还原,也就是说必须支持IPTUNNEL协议｡所以,在REALSERVER的内核中,必须编译支持IPTUNNEL这个选项｡IPTUNNEL也在Net working options里面｡
+###DR模式
+直接路由模式比较特别,很难说和什么方面相似,前2种模式基本上都是工作在网络层上(三层),而直接路由模式则应该是工作在数据链路层上(二层)｡其原理为,DR和REALSERVER都使用同一个IP对外服务｡但只有DR对ARP请求进行响应,所有REALSERVER对本身这个IP的ARP请求保持静默｡也就是说,网关会把对这个服务IP的请求全部定向给DR,而DR收到数据包后根据调度算法,找出对应的REALSERVER,把目的MAC地址改为REALSERVER的MAC并发给这台REALSERVER｡这时REALSERVER收到这个数据包,则等于直接从客户端收到这个数据包无异,处理后直接返回给客户端｡由于DR要对二层包头进行改换,所以DR和REALSERVER之间必须在一个广播域,也可以简单的理解为在同一台交换机上｡
+#LVS的算法
+###轮叫调度(Round-RobinScheduling)
+调度器通过&amp;quot;轮叫&amp;quot;调度算法将外部请求按顺序轮流分配到集群中的真实服务器上,它均等地对待每一台服务器,而不管服务器上实际的连接数和系统负载｡
+###加权轮叫调度(WeightedRound-RobinScheduling)
+调度器通过&amp;quot;加权轮叫&amp;quot;调度算法根据真实服务器的不同处理能力来调度访问请求｡这样可以保证处理能力强的服务器处理更多的访问流量｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值｡
+###最小连接调度(Least-ConnectionScheduling)
+调度器通过&amp;quot;最少连接&amp;quot;调度算法动态地将网络请求调度到已建立的链接数最少的服务器上｡如果集群系统的真实服务器具有相近的系统性能,采用&amp;quot;最小连接&amp;quot;调度算法可以较好地均衡负载｡
+###加权最小连接调度(WeightedLeast-ConnectionScheduling)
+在集群系统中的服务器性能差异较大的情况下,调度器采用&amp;quot;加权最少链接&amp;quot;调度算法优化负载均衡性能,具有较高权值的服务器将承受较大比例的活动连接负载｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值
+###基于局部性的最少链接(Locality-BasedLeastConnectionsScheduling)
+基于局部性的最少链接&amp;quot;调度算法是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡该算法根据请求的目标IP地址找出该目标IP地址最近使用的服务器,若该服务器是可用的且没有超载,将请求发送到该服务器;若服务器不存在,或者该服务器超载且有服务器处于一半的工作负载,则用&amp;quot;最少链接&amp;quot;的原则选出一个可用的服务器,将请求发送到该服务器｡
+###带复制的基于局部性最少链接(Locality-BasedLeastConnectionswithReplicationScheduling)
+带复制的基于局部性最少链接&amp;quot;调度算法也是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡它与LBLC算法的不同之处是它要维护从一个目标IP地址到一组服务器的映射,而LBLC算法维护从一个目标IP地址到一台服务器的映射｡该算法根据请求的目标IP地址找出该目标IP地址对应的服务器组,按&amp;quot;最小连接&amp;quot;原则从服务器组中选出一台服务器,若服务器没有超载,将请求发送到该服务器,若服务器超载;则按&amp;quot;最小连接&amp;quot;原则从这个集群中选出一台服务器,将该服务器加入到服务器组中,将请求发送到该服务器｡同时,当该服务器组有一段时间没有被修改,将最忙的服务器从服务器组中删除,以降低复制的程度
+###目标地址散列调度(DestinationHashingScheduling)
+目标地址散列&amp;quot;调度算法根据请求的目标IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空
+###源地址散列调度(SourceHashingScheduling)
+源地址散列&amp;quot;调度算法根据请求的源IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空｡
+yum install keepalived ipvsadm#keepalive高可用
+vim /etc/keepalived/keepalived.conf
+! Configuration File for keepalivedglobal_defs {notification_email {acassen@firewall.locfailover@firewall.locsysadmin@firewall.loc}notification_email_from Alexandre.Cassen@firewall.locsmtp_server 127.0.0.1smtp_connect_timeout 30router_id LVS-BACKUP}vrrp_instance VI_1 {	#实例的IDstate BACKUP	#主节点为MASTERinterface eth0virtual_router_id 51	# ID一定要统一两边priority 50	# 备节点一定要低于主节点advert_int 1authentication {	auth_type PASSauth_pass 1111}virtual_ipaddress {	192.">
+    <link rel="shortcut icon" href="logo.ico" />
+
+    </head>
+    <body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/Bob-log-150x150_hu703c3f72dde55974625e11e7393158f0_3014_300x0_resize_q75_box.jpg" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">🍥</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">菜菜的运维之路</a></h1>
+            <h2 class="site-description">大道至简，真实而简洁</h2>
+        </div>
+    </header><ol class="social-menu">
+            
+                <li>
+                    <a 
+                        href='https://github.com/ITzhe/blog'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/%E5%85%B3%E4%BA%8E/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/%E5%8F%8B%E6%83%85%E9%93%BE%E6%8E%A5/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+  <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+</svg>
+
+
+
+                
+                <span>友情链接</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+                <li id="i18n-switch">  
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M4 5h7" />
+  <path d="M9 3v2c0 4.418 -2.239 8 -5 8" />
+  <path d="M5 9c-.003 2.144 2.952 3.908 6.7 4" />
+  <path d="M12 20l4 -9l4 9" />
+  <path d="M19.1 18h-6.2" />
+</svg>
+
+
+
+                    <select name="language" onchange="window.location.href = this.selectedOptions[0].value">
+                        
+                            <option value="https://caizhe.org/" selected>中文</option>
+                        
+                            <option value="https://caizhe.org/en/" >English</option>
+                        
+                            <option value="https://caizhe.org/ar/" >عربي</option>
+                        
+                    </select>
+                </li>
+            
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <span>暗色模式</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+
+    
+
+            <main class="main full-width">
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/lvs-keepalived/">LVS&#43;KeepAlived</a>
+        </h2>
+    
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">Sep 13, 2017</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 1 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <p>最近闲着无聊复习了一下高可用Keepalive和LVS反向代理，觉的挺经典的，整理了一篇文档</p>
+<p>在部署之前，我们先对LVS的一些基础知识了解一下</p>
+<p>#LVS的模式</p>
+<p>###NAT模式</p>
+<p>NAT用法本来是因为网络IP地址不足而把内部保留IP地址通过映射转换成公网地址的一种上网方式(原地址NAT)｡如果把NAT的过程稍微变化,就可以成为负载均衡的一种方式｡原理其实就是把从客户端发来的IP包的IP头目的地址在DR上换成其中一台REALSERVER的IP地址并发至此REALSERVER,而REALSERVER则在处理完成后把数据经过DR主机发回给客户端,DR在这个时候再把数据包的原IP地址改为DR接口上的IP地址即可｡期间,无论是进来的流量,还是出去的流量,都必须经过DR｡</p>
+<p><img src="http://i.imgur.com/73k03Pw.png"
+	
+	
+	
+	loading="lazy"
+	
+	
+></p>
+<p>###FULLNAT 模式</p>
+<p><img src="http://i.imgur.com/thRxIAJ.png"
+	
+	
+	
+	loading="lazy"
+	
+	
+></p>
+<p>###TUNNEL模式</p>
+<p>隧道模式则类似于VPN的方式,使用网络分层的原理,在从客户端发来的数据包的基础上,封装一个新的IP头标记(不完整的IP头,只有目的IP部)发给REALSERVER,REALSERVER收到后,先把DR发过来的数据包的头给解开,还原其数据包原样,处理后,直接返回给客户端,而不需要再经过DR｡需要注意的是,由于REALSERVER需要对DR发过来的数据包进行还原,也就是说必须支持IPTUNNEL协议｡所以,在REALSERVER的内核中,必须编译支持IPTUNNEL这个选项｡IPTUNNEL也在Net working options里面｡</p>
+<p><img src="http://i.imgur.com/1f4ydpR.png"
+	
+	
+	
+	loading="lazy"
+	
+	
+></p>
+<p>###DR模式</p>
+<p>直接路由模式比较特别,很难说和什么方面相似,前2种模式基本上都是工作在网络层上(三层),而直接路由模式则应该是工作在数据链路层上(二层)｡其原理为,DR和REALSERVER都使用同一个IP对外服务｡但只有DR对ARP请求进行响应,所有REALSERVER对本身这个IP的ARP请求保持静默｡也就是说,网关会把对这个服务IP的请求全部定向给DR,而DR收到数据包后根据调度算法,找出对应的REALSERVER,把目的MAC地址改为REALSERVER的MAC并发给这台REALSERVER｡这时REALSERVER收到这个数据包,则等于直接从客户端收到这个数据包无异,处理后直接返回给客户端｡由于DR要对二层包头进行改换,所以DR和REALSERVER之间必须在一个广播域,也可以简单的理解为在同一台交换机上｡</p>
+<p><img src="http://i.imgur.com/qZlKfnd.png"
+	
+	
+	
+	loading="lazy"
+	
+	
+></p>
+<p>#LVS的算法</p>
+<p>###轮叫调度(Round-RobinScheduling)</p>
+<p>调度器通过&quot;轮叫&quot;调度算法将外部请求按顺序轮流分配到集群中的真实服务器上,它均等地对待每一台服务器,而不管服务器上实际的连接数和系统负载｡</p>
+<p>###加权轮叫调度(WeightedRound-RobinScheduling)</p>
+<p>调度器通过&quot;加权轮叫&quot;调度算法根据真实服务器的不同处理能力来调度访问请求｡这样可以保证处理能力强的服务器处理更多的访问流量｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值｡</p>
+<p>###最小连接调度(Least-ConnectionScheduling)</p>
+<p>调度器通过&quot;最少连接&quot;调度算法动态地将网络请求调度到已建立的链接数最少的服务器上｡如果集群系统的真实服务器具有相近的系统性能,采用&quot;最小连接&quot;调度算法可以较好地均衡负载｡</p>
+<p>###加权最小连接调度(WeightedLeast-ConnectionScheduling)</p>
+<p>在集群系统中的服务器性能差异较大的情况下,调度器采用&quot;加权最少链接&quot;调度算法优化负载均衡性能,具有较高权值的服务器将承受较大比例的活动连接负载｡调度器可以自动问询真实服务器的负载情况,并动态地调整其权值</p>
+<p>###基于局部性的最少链接(Locality-BasedLeastConnectionsScheduling)</p>
+<p>基于局部性的最少链接&quot;调度算法是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡该算法根据请求的目标IP地址找出该目标IP地址最近使用的服务器,若该服务器是可用的且没有超载,将请求发送到该服务器;若服务器不存在,或者该服务器超载且有服务器处于一半的工作负载,则用&quot;最少链接&quot;的原则选出一个可用的服务器,将请求发送到该服务器｡</p>
+<p>###带复制的基于局部性最少链接(Locality-BasedLeastConnectionswithReplicationScheduling)</p>
+<p>带复制的基于局部性最少链接&quot;调度算法也是针对目标IP地址的负载均衡,目前主要用于Cache集群系统｡它与LBLC算法的不同之处是它要维护从一个目标IP地址到一组服务器的映射,而LBLC算法维护从一个目标IP地址到一台服务器的映射｡该算法根据请求的目标IP地址找出该目标IP地址对应的服务器组,按&quot;最小连接&quot;原则从服务器组中选出一台服务器,若服务器没有超载,将请求发送到该服务器,若服务器超载;则按&quot;最小连接&quot;原则从这个集群中选出一台服务器,将该服务器加入到服务器组中,将请求发送到该服务器｡同时,当该服务器组有一段时间没有被修改,将最忙的服务器从服务器组中删除,以降低复制的程度</p>
+<p>###目标地址散列调度(DestinationHashingScheduling)</p>
+<p>目标地址散列&quot;调度算法根据请求的目标IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空</p>
+<p>###源地址散列调度(SourceHashingScheduling)</p>
+<p>源地址散列&quot;调度算法根据请求的源IP地址,作为散列键(HashKey)从静态分配的散列表找出对应的服务器,若该服务器是可用的且未超载,将请求发送到该服务器,否则返回空｡</p>
+<pre><code>yum install keepalived ipvsadm
+</code></pre>
+<p>#keepalive高可用</p>
+<p>vim /etc/keepalived/keepalived.conf</p>
+<pre><code>! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+     acassen@firewall.loc
+     failover@firewall.loc
+     sysadmin@firewall.loc
+   }
+   notification_email_from Alexandre.Cassen@firewall.loc
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id LVS-BACKUP
+}
+
+vrrp_instance VI_1 {					#实例的ID
+	state BACKUP						#主节点为MASTER
+	interface eth0
+	virtual_router_id 51				# ID一定要统一两边
+	priority 50							# 备节点一定要低于主节点
+	advert_int 1
+	authentication {		
+	    auth_type PASS
+	    auth_pass 1111
+	}
+	virtual_ipaddress {					
+	    192.168.56.250					#VIP的地址
+	}
+}	
+</code></pre>
+<p>主节点和主要是把角色和优先级调整一下即可，这里不再重复</p>
+<p>#keepalive+LVS高可用负载均衡</p>
+<p>还是在keepalive的配置文件末尾加入以下：</p>
+<pre><code>	virtual_server 192.168.56.250 80 {				VIP的地址
+    delay_loop 6
+    lb_algo rr										#LVS的算法（这里采用DR模式）	
+    lb_kind DR
+    nat_mask 255.255.255.0
+    persistence_timeout 50
+    protocol TCP
+
+    real_server 192.168.56.11 80 {					#后端的节点IP地址
+        weight 1
+        TCP_CHECK {									# 健康检查功能
+            connect_timeout 3
+            nb_get_retry 3
+			delay_before_retry 3
+            connect_port 80
+        }
+    }
+
+    real_server 192.168.56.12 80 {
+        weight 1
+        TCP_CHECK {
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 3
+            connect_port 80
+        }
+    }
+}
+</code></pre>
+<p>在每个客户端的节点加入ARP的抑制</p>
+<pre><code>ifconfig  lo:0 192.168.56.250/32 up
+route add -host 192.168.56.250 dev lo
+echo &quot;1&quot; &gt;/proc/sys/net/ipv4/conf/lo/arp_ignore 
+echo &quot;2&quot; &gt;/proc/sys/net/ipv4/conf/lo/arp_announce 
+echo &quot;1&quot; &gt;/proc/sys/net/ipv4/conf/all/arp_ignore 
+echo &quot;2&quot; &gt;/proc/sys/net/ipv4/conf/all/arp_announce 
+</code></pre>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/">高可用</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+</article>
+
+    
+
+    
+
+     
+    
+        
+    <div class="disqus-container">
+    <div id="disqus_thread"></div>
+<script type="application/javascript">
+    window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "hugo-theme-stack" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+
+<style>
+    .disqus-container {
+        background-color: var(--card-background);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--shadow-l1);
+        padding: var(--card-padding);
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (typeof DISQUS == 'object') {
+            DISQUS.reset({
+                reload: true
+            });
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2020 - 
+        
+        2023 菜菜的运维之路
+    </section>
+    
+    <section class="powerby">
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.16.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+            </main>
+        </div>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

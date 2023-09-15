@@ -83,6 +83,15 @@
     <loc>https://caizhe.org/p/gitlab%E5%A4%A7%E6%96%87%E4%BB%B6%E6%B8%85%E7%90%86/</loc>
     <lastmod>2023-03-01T17:44:11+08:00</lastmod>
   </url><url>
+    <loc>https://caizhe.org/p/glusterfs%E5%88%86%E5%B8%83%E5%BC%8F%E5%AD%98%E5%82%A8/</loc>
+    <lastmod>2019-09-13T10:59:21+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/tags/%E5%AD%98%E5%82%A8/</loc>
+    <lastmod>2019-09-13T10:59:21+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/</loc>
+    <lastmod>2019-09-13T10:59:21+08:00</lastmod>
+  </url><url>
     <loc>https://caizhe.org/archives/</loc>
     <lastmod>2019-05-28T00:00:00+00:00</lastmod>
   </url><url>
@@ -94,6 +103,21 @@
   </url><url>
     <loc>https://caizhe.org/p/nginx-%E5%8A%A0%E6%96%9C%E7%BA%BF%E7%9A%84%E5%8C%BA%E5%88%AB/</loc>
     <lastmod>2019-03-02T17:44:11+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/p/bind-dlz/</loc>
+    <lastmod>2018-08-02T17:44:11+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/tags/dns/</loc>
+    <lastmod>2018-08-02T17:44:11+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/p/clamv/</loc>
+    <lastmod>2018-03-13T10:59:21+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/tags/%E5%AE%89%E5%85%A8/</loc>
+    <lastmod>2018-03-13T10:59:21+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/p/lvs-keepalived/</loc>
+    <lastmod>2017-09-13T10:59:21+08:00</lastmod>
   </url><url>
     <loc>https://caizhe.org/tags/https/</loc>
     <lastmod>2017-06-13T10:59:21+08:00</lastmod>
@@ -109,6 +133,15 @@
   </url><url>
     <loc>https://caizhe.org/tags/%E8%B0%83%E4%BC%98/</loc>
     <lastmod>2017-03-02T20:52:54+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/p/301%E5%92%8C302%E5%8C%BA%E5%88%AB/</loc>
+    <lastmod>2016-12-11T10:59:21+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/tags/kvm/</loc>
+    <lastmod>2016-05-02T17:44:11+08:00</lastmod>
+  </url><url>
+    <loc>https://caizhe.org/p/kvm%E8%99%9A%E6%8B%9F%E6%9C%BA/</loc>
+    <lastmod>2016-05-02T17:44:11+08:00</lastmod>
   </url><url>
     <loc>https://caizhe.org/p/linux%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96/</loc>
     <lastmod>2016-03-02T20:49:41+08:00</lastmod>
