@@ -26,7 +26,8 @@
 1 2 3 4 5 git clone xxx # 默认拉取master分支 cd xx #进入拉取的文件夹 git branch -r | grep -v &amp;#39;\-&amp;gt;&amp;#39; | while read remote; do git branch --track &amp;#34;${remote#origin/}&amp;#34; &amp;#34;$remote&amp;#34;; done git fetch --all git pull --all 3、查找大文件（将最大的10个文件查询下来）
 1 git rev-list --objects --all | grep &amp;#34;$(git verify-pack -v .git/objects/pack/*.idx | sort -k 3 -n | tail -10 | awk &amp;#39;{print$1}&amp;#39;)&amp;#34; 4、清理查找的大文件（一次只能处理一个文件/文件夹）：">
     <link rel="shortcut icon" href="logo.ico" />
-
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+  <meta name="referrer" content="no-referrer-when-downgrade">
     </head>
     <body class="
     article-page
@@ -373,6 +374,12 @@
 
 </section>
 
+  <div class="busuanzi-footer">
+	<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次<br></span>
+	<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人<br></span>
+  </div>
+ 
+
 
     <footer class="article-footer">
     
@@ -465,6 +472,13 @@
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
         主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.16.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
     </section>
+	
+	  <div class="busuanzi-footer">
+		<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+		<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人</span>
+	  </div>
+	 
+
 </footer>
 
 

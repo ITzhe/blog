@@ -26,7 +26,8 @@ yum install mariadb-server mariadb-devel -ysystemctl start mariadb删掉一些
 delete from mysql.user where user=&#39;&#39;;create database bind;安装bind
 tar xf bind-9.11.5.tar.gzcd bind-9.11.5/./configure --with-dlz-mysql --enable-largefile --enable-threads=no --prefix=/usr/local/bind --with-openssl # 我试了开线程，但是会报错，所以还是单进程，对DNS的查询操作都是在从库，主库只负责写入和修改操作然后同步到从库，从库直接使用dns的配置文件，所以效率并不影响make -j 4make installgroupadd -r nameduseradd -s /sbin/nologin -M -r -g named namedchown -R named:named /usr/local/bind echo &amp;quot;export PATH=${PATH}:/usr/local/bind/sbin/:/usr/local/bind/bin/&amp;quot; &amp;gt;&amp;gt; /etc/profilesource /etc/profile配置bind">
     <link rel="shortcut icon" href="logo.ico" />
-
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+  <meta name="referrer" content="no-referrer-when-downgrade">
     </head>
     <body class="
     article-page
@@ -569,6 +570,12 @@ dlz &quot;myzone&quot; {
 
 </section>
 
+  <div class="busuanzi-footer">
+	<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次<br></span>
+	<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人<br></span>
+  </div>
+ 
+
 
     <footer class="article-footer">
     
@@ -661,6 +668,13 @@ dlz &quot;myzone&quot; {
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
         主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.16.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
     </section>
+	
+	  <div class="busuanzi-footer">
+		<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+		<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人</span>
+	  </div>
+	 
+
 </footer>
 
 

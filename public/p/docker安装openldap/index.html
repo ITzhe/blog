@@ -14,7 +14,8 @@
 <meta name="twitter:title" content="Docker安装OpenLDAP">
 <meta name="twitter:description" content="环境信息 系统版本 Docker LDAP Ubuntu 18 20.10 2.4.57 安装OpenLDAP 1 2 3 4 5 6 7 8 docker run -d \ -p 389:389 \ --name openldap \ --restart=always \ --env LDAP_ORGANISATION=&amp;#34;caizhe&amp;#34; \ --env LDAP_DOMAIN=&amp;#34;caizhe.org&amp;#34; \ --env LDAP_ADMIN_PASSWORD=&amp;#34;111111&amp;#34; \ osixia/openldap 安装web管理端（PHPLDAPadmin） 1 2 3 4 5 6 7 docker run -d \ --privileged \ -p 80:80 \ --name phpldapadmin \ --env PHPLDAPADMIN_HTTPS=false \ --env PHPLDAPADMIN_LDAP_HOSTS=192.168.1.100 \ osixia/phpldapadmin 测试命令： 1 ldapsearch -x -H ldap:/// -D &amp;#34;cn=admin,dc=caizhe,dc=org&amp;#34; -w 111111 -b &amp;#34;dc=caizhe,dc=org&amp;#34; -LLL 或者在容器里执行">
     <link rel="shortcut icon" href="logo.ico" />
-
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+  <meta name="referrer" content="no-referrer-when-downgrade">
     </head>
     <body class="
     article-page
@@ -1135,6 +1136,12 @@
 
 </section>
 
+  <div class="busuanzi-footer">
+	<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次<br></span>
+	<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人<br></span>
+  </div>
+ 
+
 
     <footer class="article-footer">
     
@@ -1229,6 +1236,13 @@
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
         主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.16.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
     </section>
+	
+	  <div class="busuanzi-footer">
+		<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+		<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人</span>
+	  </div>
+	 
+
 </footer>
 
 

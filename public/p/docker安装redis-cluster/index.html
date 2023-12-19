@@ -26,7 +26,8 @@ mkdir /home/redis-cluster1 2 3 4 5 6 7 8 9 port ${PORT} protected-mode no clust
 docker network create redis-net创建conf和data目录
 1 2 3 4 5 for port in `seq 7000 7005`; do \ mkdir -p ./${port}/conf \ &amp;amp;&amp;amp; PORT=${port} envsubst &amp;lt; ./redis-cluster.tmpl &amp;gt; ./${port}/conf/redis.conf \ &amp;amp;&amp;amp; mkdir -p ./${port}/data; \ done 创建Redis容器">
     <link rel="shortcut icon" href="logo.ico" />
-
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+  <meta name="referrer" content="no-referrer-when-downgrade">
     </head>
     <body class="
     article-page
@@ -535,6 +536,12 @@ docker network create redis-net创建conf和data目录
 
 </section>
 
+  <div class="busuanzi-footer">
+	<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次<br></span>
+	<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人<br></span>
+  </div>
+ 
+
 
     <footer class="article-footer">
     
@@ -627,6 +634,13 @@ docker network create redis-net创建conf和data目录
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
         主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.16.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
     </section>
+	
+	  <div class="busuanzi-footer">
+		<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+		<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人</span>
+	  </div>
+	 
+
 </footer>
 
 

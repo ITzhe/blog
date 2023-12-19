@@ -20,4 +20,11 @@
         {{ T "footer.builtWith" (dict "Generator" $Generator) | safeHTML }} <br />
         {{ T "footer.designedBy" (dict "Theme" $Theme "DesignedBy" $DesignedBy) | safeHTML }}
     </section>
+	{{ if .Site.Params.busuanzi.enable }}
+	  <div class="busuanzi-footer">
+		<span id="busuanzi_container_site_pv">本站总访问量<span id="busuanzi_value_site_pv"></span>次</span>
+		<span id="busuanzi_container_site_uv">本站总访客数<span id="busuanzi_value_site_uv"></span>人</span>
+	  </div>
+	 {{ end }}
+
 </footer>
