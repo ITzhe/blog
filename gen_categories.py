@@ -174,6 +174,25 @@ for cat_slug, cat_name, cat_desc, dirs in CATEGORIES:
     write_html(os.path.join(DIST, cat_slug, "index.html"), page)
     print("  生成 %s/  (%d 篇)" % (cat_slug, len(items)))
 
+# ---------- 生成搜索索引 ----------
+def unescape(s):
+    """标题在 HTML 里是转义过的（如 Let&#x27;s），索引用明文即可。"""
+    for a, b in (("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
+                 ("&quot;", '"'), ("&#x27;", "'"), ("&#39;", "'")):
+        s = s.replace(a, b)
+    return s
+
+
+search_data = [
+    {"t": unescape(p["title"]), "u": "%s/" % p["dir"], "c": p["cat_name"],
+     "d": p["date"], "y": p["iso"][:4]}
+    for p in sorted(posts.values(), key=lambda x: x["iso"], reverse=True)
+]
+import json as _json
+write_html(os.path.join(DIST, "search-index.json"),
+           _json.dumps(search_data, ensure_ascii=False, separators=(",", ":")) + "\n")
+print("  生成 search-index.json  (%d 条)" % len(search_data))
+
 # ---------- 重写首页 ----------
 cards = []
 for cat_slug, cat_name, cat_desc, dirs in CATEGORIES:
@@ -186,26 +205,82 @@ for cat_slug, cat_name, cat_desc, dirs in CATEGORIES:
         % (cat_slug, cat_name, cat_desc, len(dirs), "" if len(dirs) == 1 else "s")
     )
 n_posts = sum(len(c[3]) for c in CATEGORIES)
+
+SEARCH_JS = """<script>
+(function () {
+  var box = document.getElementById('q');
+  var out = document.getElementById('results');
+  var cards = document.getElementById('cats');
+  if (!box || !out || !cards) return;
+  var data = null, loading = false;
+
+  function esc(s) {
+    return s.replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function render(list) {
+    if (!list.length) {
+      out.innerHTML = '<p class="no-hit">Nothing found.</p>';
+    } else {
+      out.innerHTML = '<ul class="post-list">' + list.map(function (p) {
+        return '<li><time>' + esc(p.d) + '</time>' +
+               '<a href="' + esc(p.u) + '">' + esc(p.t) + '</a>' +
+               '<a class="tag" href="' + esc(p.c.toLowerCase()) + '/">' +
+               esc(p.c) + '</a></li>';
+      }).join('') + '</ul>';
+    }
+    out.hidden = false;
+    cards.hidden = true;
+  }
+
+  function clear() {
+    out.hidden = true;
+    out.innerHTML = '';
+    cards.hidden = false;
+  }
+
+  box.addEventListener('input', function () {
+    var q = box.value.trim().toLowerCase();
+    if (!q) { clear(); return; }
+    if (data) { filter(q); return; }
+    if (loading) return;
+    loading = true;
+    fetch('search-index.json').then(function (r) { return r.json(); })
+      .then(function (d) { data = d; loading = false; filter(box.value.trim().toLowerCase()); })
+      .catch(function () { loading = false; });
+  });
+
+  function filter(q) {
+    render(data.filter(function (p) {
+      return (p.t + ' ' + p.c + ' ' + p.y).toLowerCase().indexOf(q) !== -1;
+    }));
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && box.value) { box.value = ''; clear(); box.blur(); }
+  });
+})();
+</script>
+"""
+
 index = head("caizhe.org", 0)
 index += "<body>\n"
 index += header_html(0)
 index += '<main class="wrap">\n'
-index += '  <section class="cats">\n'
+index += '  <form class="search" role="search" onsubmit="return false">\n'
+index += '    <input id="q" type="search" placeholder="Search %d posts&hellip;" ' % n_posts
+index += 'autocomplete="off" spellcheck="false" aria-label="Search posts">\n'
+index += "  </form>\n"
+index += '  <section class="cats" id="cats">\n'
 index += "\n".join(cards) + "\n"
 index += "  </section>\n"
-index += '  <h2 class="section-title">All posts (%d)</h2>\n' % n_posts
-rows = []
-for p in sorted(posts.values(), key=lambda x: x["iso"], reverse=True):
-    rows.append(
-        '      <li><time datetime="%s">%s</time>'
-        '<a href="%s/">%s</a>'
-        '<a class="tag" href="%s/">%s</a></li>'
-        % (p["iso"], p["date"], p["dir"], p["title"], p["cat"], p["cat_name"])
-    )
-index += '  <ul class="post-list">\n%s\n  </ul>\n' % "\n".join(rows)
+index += '  <section id="results" hidden></section>\n'
 index += "</main>\n"
 index += footer_html(0)
+index += SEARCH_JS
 index += "</body>\n</html>\n"
 write_html(os.path.join(DIST, "index.html"), index)
-print("  重写 index.html  (%d 篇)" % n_posts)
+print("  重写 index.html  (%d 篇，%d 个分类)" % (n_posts, len(CATEGORIES)))
 print("完成")

@@ -19,7 +19,10 @@
   </div>
 </header>
 <main class="wrap">
-  <section class="cats">
+  <form class="search" role="search" onsubmit="return false">
+    <input id="q" type="search" placeholder="Search 20 posts&hellip;" autocomplete="off" spellcheck="false" aria-label="Search posts">
+  </form>
+  <section class="cats" id="cats">
       <a class="cat-card" href="docker/">
         <span class="cat-name">Docker</span>
         <span class="cat-desc">Running services in containers.</span>
@@ -51,34 +54,69 @@
         <span class="cat-count">2 posts</span>
       </a>
   </section>
-  <h2 class="section-title">All posts (20)</h2>
-  <ul class="post-list">
-      <li><time datetime="2023-07-24">Jul 24, 2023</time><a href="docker-openldap/">Installing OpenLDAP with Docker</a><a class="tag" href="docker/">Docker</a></li>
-      <li><time datetime="2023-06-14">Jun 14, 2023</time><a href="docker-elasticsearch/">Installing Elasticsearch with Docker</a><a class="tag" href="docker/">Docker</a></li>
-      <li><time datetime="2023-06-14">Jun 14, 2023</time><a href="docker-redis-cluster/">Installing a Redis Cluster with Docker</a><a class="tag" href="docker/">Docker</a></li>
-      <li><time datetime="2023-06-13">Jun 13, 2023</time><a href="kubernetes-api-calls/">Calling the Kubernetes API</a><a class="tag" href="kubernetes/">Kubernetes</a></li>
-      <li><time datetime="2023-03-13">Mar 13, 2023</time><a href="docker-keepalived/">Installing Keepalived with Docker</a><a class="tag" href="docker/">Docker</a></li>
-      <li><time datetime="2023-03-13">Mar 13, 2023</time><a href="kubernetes-1-22-ha-install/">High-Availability Kubernetes 1.22 Installation</a><a class="tag" href="kubernetes/">Kubernetes</a></li>
-      <li><time datetime="2023-03-02">Mar 02, 2023</time><a href="containerd-commands/">Common containerd Commands</a><a class="tag" href="kubernetes/">Kubernetes</a></li>
-      <li><time datetime="2023-03-01">Mar 01, 2023</time><a href="containerd-install/">Installing containerd</a><a class="tag" href="kubernetes/">Kubernetes</a></li>
-      <li><time datetime="2023-03-01">Mar 01, 2023</time><a href="gitlab-purge-large-files/">Purging Large Files from a GitLab Repository</a><a class="tag" href="storage/">Storage</a></li>
-      <li><time datetime="2019-09-13">Sep 13, 2019</time><a href="glusterfs-distributed-storage/">GlusterFS Distributed Storage</a><a class="tag" href="storage/">Storage</a></li>
-      <li><time datetime="2019-03-02">Mar 02, 2019</time><a href="nginx-trailing-slash/">The Difference a Trailing Slash Makes in Nginx</a><a class="tag" href="networking/">Networking</a></li>
-      <li><time datetime="2018-08-02">Aug 02, 2018</time><a href="bind-dlz/">Bind with DLZ and a MySQL Backend</a><a class="tag" href="networking/">Networking</a></li>
-      <li><time datetime="2018-03-13">Mar 13, 2018</time><a href="clamav/">ClamAV on Linux</a><a class="tag" href="other/">Other</a></li>
-      <li><time datetime="2017-09-13">Sep 13, 2017</time><a href="lvs-keepalived/">LVS + Keepalived</a><a class="tag" href="networking/">Networking</a></li>
-      <li><time datetime="2017-06-13">Jun 13, 2017</time><a href="letsencrypt-acme-sh/">Let&#x27;s Encrypt with acme.sh</a><a class="tag" href="systems/">Systems</a></li>
-      <li><time datetime="2017-03-02">Mar 02, 2017</time><a href="redis-tuning/">Redis Tuning</a><a class="tag" href="other/">Other</a></li>
-      <li><time datetime="2016-12-11">Dec 11, 2016</time><a href="301-vs-302-redirect/">301 vs 302: What&#x27;s the Difference</a><a class="tag" href="networking/">Networking</a></li>
-      <li><time datetime="2016-05-02">May 02, 2016</time><a href="kvm-virtual-machines/">KVM Virtual Machines</a><a class="tag" href="systems/">Systems</a></li>
-      <li><time datetime="2016-03-02">Mar 02, 2016</time><a href="nginx-tuning/">Nginx Tuning</a><a class="tag" href="networking/">Networking</a></li>
-      <li><time datetime="2016-03-02">Mar 02, 2016</time><a href="linux-system-tuning/">Linux System Tuning</a><a class="tag" href="systems/">Systems</a></li>
-  </ul>
+  <section id="results" hidden></section>
 </main>
 <footer class="site-footer">
   <div class="wrap">
     &copy; caizhe &middot; <a href="./about/">About</a> &middot; <a href="https://github.com/ITzhe/blog">GitHub</a>
   </div>
 </footer>
+<script>
+(function () {
+  var box = document.getElementById('q');
+  var out = document.getElementById('results');
+  var cards = document.getElementById('cats');
+  if (!box || !out || !cards) return;
+  var data = null, loading = false;
+
+  function esc(s) {
+    return s.replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function render(list) {
+    if (!list.length) {
+      out.innerHTML = '<p class="no-hit">Nothing found.</p>';
+    } else {
+      out.innerHTML = '<ul class="post-list">' + list.map(function (p) {
+        return '<li><time>' + esc(p.d) + '</time>' +
+               '<a href="' + esc(p.u) + '">' + esc(p.t) + '</a>' +
+               '<a class="tag" href="' + esc(p.c.toLowerCase()) + '/">' +
+               esc(p.c) + '</a></li>';
+      }).join('') + '</ul>';
+    }
+    out.hidden = false;
+    cards.hidden = true;
+  }
+
+  function clear() {
+    out.hidden = true;
+    out.innerHTML = '';
+    cards.hidden = false;
+  }
+
+  box.addEventListener('input', function () {
+    var q = box.value.trim().toLowerCase();
+    if (!q) { clear(); return; }
+    if (data) { filter(q); return; }
+    if (loading) return;
+    loading = true;
+    fetch('search-index.json').then(function (r) { return r.json(); })
+      .then(function (d) { data = d; loading = false; filter(box.value.trim().toLowerCase()); })
+      .catch(function () { loading = false; });
+  });
+
+  function filter(q) {
+    render(data.filter(function (p) {
+      return (p.t + ' ' + p.c + ' ' + p.y).toLowerCase().indexOf(q) !== -1;
+    }));
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && box.value) { box.value = ''; clear(); box.blur(); }
+  });
+})();
+</script>
 </body>
 </html>

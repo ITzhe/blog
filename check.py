@@ -37,6 +37,7 @@ REQUIRED_FILES = [
     "style.css",
     "favicon.ico",
     "about/index.html",
+    "search-index.json",
 ]
 
 # 不希望再出现的文件（已废弃的 SEO / 老站遗留）
@@ -256,6 +257,46 @@ def main():
         if s not in cat_post_slugs:
             errors.append(f"文章没有被任何分类收录：{s}")
             print(f"   ✗ 文章没有被任何分类收录：{s}")
+
+    # ---------- 3c. 搜索索引 ----------
+    print("\n[3c/6] 检查搜索索引")
+    idx_file = DIST / "search-index.json"
+    if not idx_file.exists():
+        errors.append("缺少 search-index.json")
+        print("   ✗ 缺少 search-index.json")
+    else:
+        try:
+            idx = json.loads(idx_file.read_text(encoding="utf-8"))
+            idx_slugs = {e["u"].rstrip("/") for e in idx}
+            # 索引里的每篇文章必须存在
+            for s in sorted(idx_slugs):
+                if not (DIST / s / "index.html").exists():
+                    errors.append(f"搜索索引指向不存在的文章：{s}")
+                    print(f"   ✗ 搜索索引指向不存在的文章：{s}")
+            # 每篇文章都必须能被搜到
+            for s in slugs:
+                if s not in idx_slugs:
+                    errors.append(f"文章不在搜索索引里：{s}")
+                    print(f"   ✗ 文章不在搜索索引里：{s}")
+            print(f"   ✓ {len(idx)} 条，与 {len(slugs)} 篇文章一一对应")
+        except Exception as e:
+            errors.append(f"search-index.json 解析失败：{e}")
+            print(f"   ✗ 解析失败：{e}")
+
+    # 首页不该再直接罗列文章（文章入口在分类页）
+    # 注意：搜索结果里也有 post-list，但那是 <script> 动态生成的字面量，
+    # 所以先把 <script> 整段剥掉再判断。
+    idx_html = (DIST / "index.html").read_text(encoding="utf-8")
+    idx_static = re.sub(r"<script.*?</script>", "", idx_html, flags=re.S | re.I)
+    if 'id="q"' not in idx_html:
+        errors.append("首页缺少搜索框")
+        print("   ✗ 首页缺少搜索框")
+    if 'class="post-list"' in idx_static:
+        errors.append("首页不该再直接列出文章，入口应在分类页")
+        print("   ✗ 首页仍在直接列出文章")
+    if "cat-card" not in idx_html:
+        errors.append("首页缺少分类卡片")
+        print("   ✗ 首页缺少分类卡片")
 
     # ---------- 4. 链接 ----------
     print("\n[4/6] 检查链接")
