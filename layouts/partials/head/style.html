@@ -1,8 +1,0 @@
-{{- /* 覆盖主题的 head/style.html。
-       主题 Stack v3.16.0 原版用的是 `resources.ToCSS`，该 API 在 Hugo v0.128
-       已被移除，用新版 Hugo 构建会直接报错。这里改用新的 `css.Sass` 流程，
-       以便在当前版本 Hugo 上正常构建。
-       注意：不要删除本文件，否则构建会失败。 */ -}}
-{{ $sass := resources.Get "scss/style.scss" }}
-{{ $style := $sass | css.Sass | minify | resources.Fingerprint "sha256" }}
-<link rel="stylesheet" href="{{ $style.RelPermalink }}">

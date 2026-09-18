@@ -1,3 +1,0 @@
-# robots.txt generated at https://www.sojson.com/robots/
-User-agent: *
-Disallow:

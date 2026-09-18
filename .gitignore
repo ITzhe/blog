@@ -1,13 +1,5 @@
-# Hugo 构建产物，由 Cloudflare 自动生成，不要提交
-public/
-resources/_gen/
-
-# Hugo 构建锁文件
-.hugo_build.lock
-
-# 本地配置覆盖文件
-config.local.yaml
-config.*.local.yaml
+# 本项目为纯静态 HTML 站点，dist/ 是最终产物，需要提交。
+# 以下为不需要纳入版本控制的内容。
 
 # 系统 / 编辑器产生的临时文件
 .DS_Store
@@ -17,6 +9,15 @@ Thumbs.db
 
 # 备份文件
 *.bak
+*~
 
 # AI 助手的工作目录（记忆、技能等元数据）
 .workbuddy-ai/
+
+# 本地预览脚本产生的临时文件
+__pycache__/
+*.pyc
+
+# Hugo 时代的遗留空文件。已被系统占用句柄，暂时删不掉，
+# 不影响站点运行，重启电脑后可手动删除。
+.hugo_build.lock
