@@ -42,6 +42,33 @@ body {
 .site-nav a { color: var(--muted); text-decoration: none; }
 .site-nav a:hover { color: var(--link); }
 
+/* 页头链接 */
+.site-title { font-size: 1.15rem; font-weight: 600; color: var(--fg); text-decoration: none; }
+
+/* 首页 —— 分类卡片 */
+.cats {
+  display: grid; gap: .9rem; margin-bottom: 3rem;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+}
+.cat-card {
+  display: flex; flex-direction: column; gap: .3rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border); border-radius: 10px;
+  text-decoration: none; color: inherit;
+  transition: border-color .15s, transform .15s;
+}
+.cat-card:hover { border-color: var(--link); transform: translateY(-2px); }
+.cat-name { font-size: 1rem; font-weight: 600; color: var(--fg); }
+.cat-desc { font-size: .82rem; color: var(--muted); line-height: 1.45; }
+.cat-count {
+  margin-top: .35rem; font-size: .75rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+
+.section-title {
+  font-size: 1.15rem; font-weight: 600; margin: 0 0 .3rem;
+}
+
 /* 文章列表 */
 .post-list { list-style: none; padding: 0; margin: 0; }
 .post-list li {
@@ -53,8 +80,21 @@ body {
   color: var(--muted); font-size: .82rem; white-space: nowrap;
   font-variant-numeric: tabular-nums; min-width: 6.5rem;
 }
-.post-list a { color: var(--fg); text-decoration: none; flex: 1; }
-.post-list a:hover { color: var(--link); }
+.post-list li > a:first-of-type { color: var(--fg); text-decoration: none; flex: 1; }
+.post-list li > a:first-of-type:hover { color: var(--link); }
+.post-list .tag {
+  font-size: .72rem; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: .1rem .5rem; white-space: nowrap;
+}
+.post-list .tag:hover { color: var(--link); border-color: var(--link); }
+
+/* 分类页 */
+.page-title { font-size: 1.5rem; font-weight: 600; margin: 0 0 .4rem; }
+.page-desc { color: var(--muted); font-size: .9rem; margin: 0 0 1.8rem; }
+.back-link { margin-top: 2rem; font-size: .88rem; }
+.back-link a { color: var(--muted); text-decoration: none; }
+.back-link a:hover { color: var(--link); }
 
 /* 文章页 */
 article { padding-bottom: 3rem; }

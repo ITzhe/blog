@@ -63,6 +63,10 @@ TODO_PATTERNS = [
      "阿里云 OSS 图片（计划迁往 Cloudflare R2）"),
 ]
 
+# 分类页目录（由 gen_categories.py 生成，不是文章，不参与正文检查）
+CATEGORY_DIRS = ["docker", "kubernetes", "networking",
+                 "storage", "systems", "other"]
+
 VOID_TAGS = {
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
@@ -119,9 +123,10 @@ def check_tags(path):
 
 
 def post_dirs():
-    """文章目录：dist/ 下除了 about 之外的一级目录。"""
+    """文章目录：dist/ 下除了 about 和分类页之外的一级目录。"""
     return sorted(d.name for d in DIST.iterdir()
-                  if d.is_dir() and d.name != "about")
+                  if d.is_dir() and d.name != "about"
+                  and d.name not in CATEGORY_DIRS)
 
 
 def load_snapshot():
@@ -210,6 +215,47 @@ def main():
             print(f"   ✗ {slug}: {'; '.join(problems)}")
             bad_count += 1
     print(f"   共 {len(slugs)} 篇，{len(slugs) - bad_count} 篇正常")
+
+    # ---------- 3b. 分类页 ----------
+    print("\n[3b/6] 检查分类页")
+    cat_bad = 0
+    cat_post_slugs = set()
+    for cat in CATEGORY_DIRS:
+        f = DIST / cat / "index.html"
+        if not f.exists():
+            errors.append(f"缺失分类页 {cat}/index.html")
+            print(f"   ✗ 缺失 {cat}/index.html")
+            cat_bad += 1
+            continue
+        raw = f.read_text(encoding="utf-8")
+        problems = []
+        if "<title>" not in raw:
+            problems.append("没有标题")
+        if 'class="page-title"' not in raw:
+            problems.append("没有分类标题")
+        if "post-list" not in raw:
+            problems.append("没有文章列表")
+        # 分类页里的文章链接，收集起来做交叉验证
+        for m in re.finditer(r'href="\.\./([a-z0-9-]+)/"', raw):
+            cat_post_slugs.add(m.group(1))
+        tag_err = check_tags(f)
+        if tag_err:
+            problems.append(tag_err)
+        if problems:
+            errors.append(f"{cat}/: {'; '.join(problems)}")
+            print(f"   ✗ {cat}/: {'; '.join(problems)}")
+            cat_bad += 1
+    print(f"   共 {len(CATEGORY_DIRS)} 个，{len(CATEGORY_DIRS) - cat_bad} 个正常")
+
+    # 交叉验证：分类页引用的文章必须真实存在，且每篇文章都被某个分类收录
+    for s in sorted(cat_post_slugs):
+        if not (DIST / s / "index.html").exists():
+            errors.append(f"分类页引用了不存在的文章：{s}")
+            print(f"   ✗ 分类页引用了不存在的文章：{s}")
+    for s in slugs:
+        if s not in cat_post_slugs:
+            errors.append(f"文章没有被任何分类收录：{s}")
+            print(f"   ✗ 文章没有被任何分类收录：{s}")
 
     # ---------- 4. 链接 ----------
     print("\n[4/6] 检查链接")

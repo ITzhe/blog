@@ -3,49 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>caizhe.org — Simple, honest, and to the point</title>
+<title>caizhe.org</title>
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="favicon.ico">
 </head>
 <body>
 <header class="site-header">
   <div class="wrap">
-    <h1 class="site-title"><a href="./">caizhe.org</a></h1>
+    <a class="site-title" href="./">caizhe.org</a>
     <nav class="site-nav">
       <a href="./">Home</a>
-      <a href="about/">About</a>
+      <a href="./about/">About</a>
       <a href="https://github.com/ITzhe/blog">GitHub</a>
     </nav>
   </div>
 </header>
 <main class="wrap">
-<h2 class="archive-year">All posts (20)</h2>
-    <ul class="post-list">
-      <li><time datetime="2023-07-24">Jul 24, 2023</time><a href="docker-openldap/">Installing OpenLDAP with Docker</a></li>
-      <li><time datetime="2023-06-14">Jun 14, 2023</time><a href="docker-elasticsearch/">Installing Elasticsearch with Docker</a></li>
-      <li><time datetime="2023-06-14">Jun 14, 2023</time><a href="docker-redis-cluster/">Installing a Redis Cluster with Docker</a></li>
-      <li><time datetime="2023-06-13">Jun 13, 2023</time><a href="kubernetes-api-calls/">Calling the Kubernetes API</a></li>
-      <li><time datetime="2023-03-13">Mar 13, 2023</time><a href="docker-keepalived/">Installing Keepalived with Docker</a></li>
-      <li><time datetime="2023-03-13">Mar 13, 2023</time><a href="kubernetes-1-22-ha-install/">High-Availability Kubernetes 1.22 Installation</a></li>
-      <li><time datetime="2023-03-02">Mar 02, 2023</time><a href="containerd-commands/">Common containerd Commands</a></li>
-      <li><time datetime="2023-03-01">Mar 01, 2023</time><a href="containerd-install/">Installing containerd</a></li>
-      <li><time datetime="2023-03-01">Mar 01, 2023</time><a href="gitlab-purge-large-files/">Purging Large Files from a GitLab Repository</a></li>
-      <li><time datetime="2019-09-13">Sep 13, 2019</time><a href="glusterfs-distributed-storage/">GlusterFS Distributed Storage</a></li>
-      <li><time datetime="2019-03-02">Mar 02, 2019</time><a href="nginx-trailing-slash/">The Difference a Trailing Slash Makes in Nginx</a></li>
-      <li><time datetime="2018-08-02">Aug 02, 2018</time><a href="bind-dlz/">Bind with DLZ and a MySQL Backend</a></li>
-      <li><time datetime="2018-03-13">Mar 13, 2018</time><a href="clamav/">ClamAV on Linux</a></li>
-      <li><time datetime="2017-09-13">Sep 13, 2017</time><a href="lvs-keepalived/">LVS + Keepalived</a></li>
-      <li><time datetime="2017-06-13">Jun 13, 2017</time><a href="letsencrypt-acme-sh/">Let&#x27;s Encrypt with acme.sh</a></li>
-      <li><time datetime="2017-03-02">Mar 02, 2017</time><a href="redis-tuning/">Redis Tuning</a></li>
-      <li><time datetime="2016-12-11">Dec 11, 2016</time><a href="301-vs-302-redirect/">301 vs 302: What&#x27;s the Difference</a></li>
-      <li><time datetime="2016-05-02">May 02, 2016</time><a href="kvm-virtual-machines/">KVM Virtual Machines</a></li>
-      <li><time datetime="2016-03-02">Mar 02, 2016</time><a href="linux-system-tuning/">Linux System Tuning</a></li>
-      <li><time datetime="2016-03-02">Mar 02, 2016</time><a href="nginx-tuning/">Nginx Tuning</a></li>
-    </ul>
+  <section class="cats">
+      <a class="cat-card" href="docker/">
+        <span class="cat-name">Docker</span>
+        <span class="cat-desc">Running services in containers.</span>
+        <span class="cat-count">4 posts</span>
+      </a>
+      <a class="cat-card" href="kubernetes/">
+        <span class="cat-name">Kubernetes</span>
+        <span class="cat-desc">Container orchestration, cluster setup, and the API.</span>
+        <span class="cat-count">4 posts</span>
+      </a>
+      <a class="cat-card" href="networking/">
+        <span class="cat-name">Networking</span>
+        <span class="cat-desc">Web servers, load balancing, and DNS.</span>
+        <span class="cat-count">5 posts</span>
+      </a>
+      <a class="cat-card" href="storage/">
+        <span class="cat-name">Storage</span>
+        <span class="cat-desc">Distributed filesystems and repository maintenance.</span>
+        <span class="cat-count">2 posts</span>
+      </a>
+      <a class="cat-card" href="systems/">
+        <span class="cat-name">Systems</span>
+        <span class="cat-desc">Linux internals, virtualisation, and certificates.</span>
+        <span class="cat-count">3 posts</span>
+      </a>
+      <a class="cat-card" href="other/">
+        <span class="cat-name">Other</span>
+        <span class="cat-desc">Everything that does not fit elsewhere.</span>
+        <span class="cat-count">2 posts</span>
+      </a>
+  </section>
+  <h2 class="section-title">All posts (20)</h2>
+  <ul class="post-list">
+      <li><time datetime="2023-07-24">Jul 24, 2023</time><a href="docker-openldap/">Installing OpenLDAP with Docker</a><a class="tag" href="docker/">Docker</a></li>
+      <li><time datetime="2023-06-14">Jun 14, 2023</time><a href="docker-elasticsearch/">Installing Elasticsearch with Docker</a><a class="tag" href="docker/">Docker</a></li>
+      <li><time datetime="2023-06-14">Jun 14, 2023</time><a href="docker-redis-cluster/">Installing a Redis Cluster with Docker</a><a class="tag" href="docker/">Docker</a></li>
+      <li><time datetime="2023-06-13">Jun 13, 2023</time><a href="kubernetes-api-calls/">Calling the Kubernetes API</a><a class="tag" href="kubernetes/">Kubernetes</a></li>
+      <li><time datetime="2023-03-13">Mar 13, 2023</time><a href="docker-keepalived/">Installing Keepalived with Docker</a><a class="tag" href="docker/">Docker</a></li>
+      <li><time datetime="2023-03-13">Mar 13, 2023</time><a href="kubernetes-1-22-ha-install/">High-Availability Kubernetes 1.22 Installation</a><a class="tag" href="kubernetes/">Kubernetes</a></li>
+      <li><time datetime="2023-03-02">Mar 02, 2023</time><a href="containerd-commands/">Common containerd Commands</a><a class="tag" href="kubernetes/">Kubernetes</a></li>
+      <li><time datetime="2023-03-01">Mar 01, 2023</time><a href="containerd-install/">Installing containerd</a><a class="tag" href="kubernetes/">Kubernetes</a></li>
+      <li><time datetime="2023-03-01">Mar 01, 2023</time><a href="gitlab-purge-large-files/">Purging Large Files from a GitLab Repository</a><a class="tag" href="storage/">Storage</a></li>
+      <li><time datetime="2019-09-13">Sep 13, 2019</time><a href="glusterfs-distributed-storage/">GlusterFS Distributed Storage</a><a class="tag" href="storage/">Storage</a></li>
+      <li><time datetime="2019-03-02">Mar 02, 2019</time><a href="nginx-trailing-slash/">The Difference a Trailing Slash Makes in Nginx</a><a class="tag" href="networking/">Networking</a></li>
+      <li><time datetime="2018-08-02">Aug 02, 2018</time><a href="bind-dlz/">Bind with DLZ and a MySQL Backend</a><a class="tag" href="networking/">Networking</a></li>
+      <li><time datetime="2018-03-13">Mar 13, 2018</time><a href="clamav/">ClamAV on Linux</a><a class="tag" href="other/">Other</a></li>
+      <li><time datetime="2017-09-13">Sep 13, 2017</time><a href="lvs-keepalived/">LVS + Keepalived</a><a class="tag" href="networking/">Networking</a></li>
+      <li><time datetime="2017-06-13">Jun 13, 2017</time><a href="letsencrypt-acme-sh/">Let&#x27;s Encrypt with acme.sh</a><a class="tag" href="systems/">Systems</a></li>
+      <li><time datetime="2017-03-02">Mar 02, 2017</time><a href="redis-tuning/">Redis Tuning</a><a class="tag" href="other/">Other</a></li>
+      <li><time datetime="2016-12-11">Dec 11, 2016</time><a href="301-vs-302-redirect/">301 vs 302: What&#x27;s the Difference</a><a class="tag" href="networking/">Networking</a></li>
+      <li><time datetime="2016-05-02">May 02, 2016</time><a href="kvm-virtual-machines/">KVM Virtual Machines</a><a class="tag" href="systems/">Systems</a></li>
+      <li><time datetime="2016-03-02">Mar 02, 2016</time><a href="nginx-tuning/">Nginx Tuning</a><a class="tag" href="networking/">Networking</a></li>
+      <li><time datetime="2016-03-02">Mar 02, 2016</time><a href="linux-system-tuning/">Linux System Tuning</a><a class="tag" href="systems/">Systems</a></li>
+  </ul>
 </main>
 <footer class="site-footer">
   <div class="wrap">
-    &copy; caizhe &middot; <a href="about/">About</a>
+    &copy; caizhe &middot; <a href="./about/">About</a> &middot; <a href="https://github.com/ITzhe/blog">GitHub</a>
   </div>
 </footer>
 </body>
