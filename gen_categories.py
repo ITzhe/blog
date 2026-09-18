@@ -115,7 +115,11 @@ print("文章 %d 篇，全部分类完毕" % len(posts))
 
 
 def head(title, depth):
-    """depth=0 首页（在 dist 根），depth=1 子目录页（分类页/文章页）"""
+    """depth=0 首页（在 dist 根），depth=1 子目录页（分类页/文章页）
+
+    SEO 标记块（canonical / og / JSON-LD 等）由 gen_seo.py 统一注入，
+    这里不用管，否则两处会打架。
+    """
     up = "../" if depth else ""
     return """<!DOCTYPE html>
 <html lang="en">
@@ -286,4 +290,13 @@ index += SEARCH_JS
 index += "</body>\n</html>\n"
 write_html(os.path.join(DIST, "index.html"), index)
 print("  重写 index.html  (%d 篇，%d 个分类)" % (n_posts, len(CATEGORIES)))
+
+# ---------- SEO 标签 / sitemap / robots / feed ----------
+# 放在最后：上面会重写首页和分类页，SEO 块必须在那之后注入，
+# 否则改动会被覆盖掉。
+import subprocess
+r = subprocess.run([sys.executable, "gen_seo.py"], capture_output=True, text=True)
+if r.returncode != 0:
+    sys.exit("gen_seo.py 失败：\n%s%s" % (r.stdout, r.stderr))
+print(r.stdout.rstrip())
 print("完成")

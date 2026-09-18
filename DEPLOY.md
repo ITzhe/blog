@@ -12,21 +12,50 @@
 ```
 blog/
 ├── dist/                  ← 网站本体，部署目录填 dist
-│   ├── index.html         首页（20 篇文章列表）
+│   ├── index.html         首页（只有分类卡片 + 搜索框）
 │   ├── 404.html           找不到页面时显示
 │   ├── style.css          全站唯一的样式文件
 │   ├── favicon.ico        标签页图标
+│   ├── og-cover.png       分享到微信/Twitter 时的预览图（1200x630）
+│   ├── search-index.json  首页搜索用的静态索引
+│   ├── sitemap.xml        给搜索引擎的页面清单（自动生成）
+│   ├── robots.txt         爬虫规则（自动生成）
+│   ├── feed.xml           RSS 订阅源（自动生成）
 │   ├── about/
 │   │   └── index.html     关于页
+│   ├── docker/ kubernetes/ ...   分类页（7 个，自动生成）
 │   ├── nginx-tuning/
 │   │   └── index.html     文章页，每篇一个目录
-│   ├── ...                另外 19 篇文章
+│   └── ...                另外 22 篇文章
 ├── check.py               体检工具
+├── gen_categories.py      生成分类页 + 首页 + 搜索索引
+├── gen_seo.py             注入 SEO 标签 + 生成 sitemap/robots/feed
+├── gen_og_cover.py        生成分享预览图 og-cover.png
 └── .snapshot.json         内容快照（check.py 用，要提交）
 ```
 
 **文章地址就是目录名**，比如 `dist/nginx-tuning/index.html` 对应
 `https://www.caizhe.org/nginx-tuning/`。
+
+### SEO 是自动的，不要手改
+
+`canonical` / `description` / Open Graph / 结构化数据由 `gen_seo.py`
+统一注入，包在 `<!-- seo:start -->` 和 `<!-- seo:end -->` 之间。
+
+- **不要手工编辑那个标记块**，重跑脚本会被覆盖
+- 重跑是**幂等**的，不会重复叠加标签
+- `sitemap.xml`、`robots.txt`、`feed.xml` 都是生成的，不要手改
+- **canonical 一律指向 `https://www.caizhe.org/`**：裸域已 301 到 www，
+  而 `*.pages.dev` 是 Cloudflare 自动给的、跳不掉，只能靠 canonical 收敛
+
+改完文章标题或正文后，重跑一次就能刷新 description：
+
+```
+python gen_categories.py     # 它会自动调用 gen_seo.py
+```
+
+想手写某篇文章的 description（自动摘的不满意时），
+加到 `gen_seo.py` 的 `POST_DESC` 字典里，键是 `"<slug>/"`。
 
 ---
 
@@ -100,15 +129,20 @@ Cloudflare 会自动重新部署，一两分钟后线上生效。
 python check.py
 ```
 
-它检查六件事：
+它检查这些事：
 
-1. **固定文件** —— `index.html`、`style.css`、`404.html` 等是否都在
-2. **老站残留** —— 是否混入了 `sitemap.xml`、`_redirects`、`tags/` 之类
-   这个网站不需要的文件
+1. **固定文件** —— `index.html`、`style.css`、`404.html`、`sitemap.xml`、
+   `robots.txt`、`feed.xml` 等是否都在
+2. **老站残留** —— 是否混入了 `_redirects`、`tags/` 之类不需要的文件
 3. **文章结构** —— 每篇是否都有标题、正文区；HTML 标签是否配对
-4. **链接** —— 有没有断链，页内跳转锚点是否有效
-5. **不该出现的内容** —— 是否混入了 SEO 标签或指向已删除标签页的链接
-6. **内容变化** —— 和上次相比，哪些文章的正文被改了、改了多少字
+4. **分类页** —— 分类页是否完整；每篇文章是否都被某个分类收录
+5. **搜索索引** —— `search-index.json` 和文章是否一一对应
+6. **链接** —— 有没有断链，页内跳转锚点是否有效
+7. **不该出现的内容** —— 阿里云 OSS 图片残留、指向已删标签页的链接
+8. **SEO 标签** —— 每页是否有 canonical / description / og / 结构化数据；
+   canonical 是否指向 www 主域、是否重复；`sitemap.xml` 和 canonical
+   是否对得上；`robots.txt` 是否声明了 Sitemap；`feed.xml` 是否是合法 XML
+9. **内容变化** —— 和上次相比，哪些文章的正文被改了、改了多少字
 
 正常时最后一行是「一切正常 ✓」，退出码 0。有问题会列出具体位置并提示
 用 `git checkout -- dist/` 撤销。
@@ -121,14 +155,28 @@ python check.py
 1. 复制一个现有目录，比如复制 `dist/clamav/`，改名为 `dist/新文章名/`
    （目录名就是 URL，用英文小写加连字符）
 2. 改 `index.html` 里的标题、日期、正文
-3. 在 `dist/index.html` 的文章列表里加一行：
+3. 在 `gen_categories.py` 的 `CATEGORIES` 里，把新目录名加到对应分类的列表里
+4. 跑生成 + 体检：
 
-   ```html
-   <li><time datetime="2026-09-18">Sep 18, 2026</time><a href="新文章名/">文章标题</a></li>
+   ```
+   python gen_categories.py     # 重建分类页/首页/搜索索引，并注入 SEO 标签
+   python check.py
    ```
 
-   放在合适的位置（列表是按日期倒序的）。
-4. 跑 `python check.py` 确认没弄坏。
+**不用手动改首页列表** —— 首页只显示分类卡片，文章入口在分类页，
+都由脚本生成。忘了第 3 步的话，`gen_categories.py` 和 `check.py`
+都会报错拦住你（这是故意的）。
+
+### 加一个新分类
+
+要改两个文件，少改一个会踩坑：
+
+1. `gen_categories.py` 的 `CATEGORIES` —— 生成分类页 + 首页卡片 + 搜索索引
+2. `check.py` 的 `CATEGORY_DIRS` —— **漏改会把分类页当成文章去查正文，
+   报一堆「没有正文区」的假错误**
+
+如果想让这个分类页在搜索结果里有更好的 description，
+再把它加到 `gen_seo.py` 的 `CATEGORY_DESC` 里。
 
 ### 改样式
 
@@ -136,6 +184,22 @@ python check.py
 
 颜色、宽度、字号都在文件顶部的 `:root { ... }` 里。
 深色模式的配色在下面的 `@media (prefers-color-scheme: dark)` 里。
+
+> 站点标题统一用 `<a class="site-title">`，**不要包 `<h1>`** ——
+> 文章页已经有 `<h1 class="article-title">`，再包一层会出现两个一级标题。
+
+---
+
+## 四、提交后要做的 SEO 动作（一次性）
+
+代码里该有的都有了，但有两件事只能在网页上做：
+
+1. **Google Search Console** —— 添加资源 `https://www.caizhe.org`，
+   用 DNS 验证（Cloudflare 里加一条 TXT 记录即可），
+   然后提交 `https://www.caizhe.org/sitemap.xml`
+2. **Bing Webmaster Tools** —— 同上，可以从 Search Console 直接导入
+
+提交后可以在「网址检查」里手动请求抓取首页，加速收录。
 
 ---
 

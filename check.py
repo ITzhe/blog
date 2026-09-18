@@ -38,24 +38,27 @@ REQUIRED_FILES = [
     "favicon.ico",
     "about/index.html",
     "search-index.json",
-]
-
-# 不希望再出现的文件（已废弃的 SEO / 老站遗留）
-FORBIDDEN_FILES = [
     "sitemap.xml",
     "robots.txt",
-    "_redirects",
-    "_headers",
     "feed.xml",
 ]
 
+# 不希望再出现的文件（老站遗留）
+FORBIDDEN_FILES = [
+    "_redirects",
+    "_headers",
+]
+
 # 不希望再出现在 HTML 里的东西
+# 注意：canonical / og / description 曾经是禁止项（当时策略是「纯静态、
+# 不要 SEO」），现在策略已改为「正式做 SEO」，所以它们从禁止列表移出，
+# 改为在 [5b] 里做正向校验。这里只留真正该消失的东西。
 FORBIDDEN_PATTERNS = [
-    (r'<link rel="canonical"', "canonical 链接"),
-    (r'<meta property="og:', "og 标签"),
-    (r'<meta name="twitter:', "twitter 标签"),
-    (r'<meta name="description"', "description meta"),
     (r'href="[^"]*tags/', "指向已删除标签页的链接"),
+    # 只针对我们自己那个 OSS bucket（图片已迁 R2）。
+    # 不要写成笼统的 aliyuncs.com —— registry.aliyuncs.com 是合法的
+    # k8s.gcr.io 镜像加速源，文章里本来就该留着。
+    (r'caizhe-img\.oss-cn-beijing\.aliyuncs\.com', "阿里云 OSS 图片残留地址"),
 ]
 
 # 单独跟踪的待办项（不算错误，只提示）
@@ -351,6 +354,113 @@ def main():
             print(f"   ✗ {desc}（{len(files)} 个文件）")
     if not found2:
         print("   ✓ 干净")
+
+    # ---------- 5b. SEO 标签 ----------
+    print("\n[5b/6] 检查 SEO 标签")
+    SEO_START = "<!-- seo:start -->"
+    SEO_END = "<!-- seo:end -->"
+    seo_bad = 0
+    canon_seen = {}
+    n_checked = 0
+    for f in sorted(DIST.rglob("*.html")):
+        txt = f.read_text(encoding="utf-8")
+        rel = str(f.relative_to(DIST)).replace("\\", "/")
+        probs = []
+        if SEO_START not in txt or SEO_END not in txt:
+            probs.append("缺少 SEO 标记块（跑 gen_seo.py）")
+        else:
+            blk = txt[txt.find(SEO_START): txt.find(SEO_END)]
+            # canonical 必须存在且唯一
+            cans = re.findall(r'<link rel="canonical" href="([^"]+)"', blk)
+            if len(cans) != 1:
+                probs.append(f"canonical 数量异常（{len(cans)} 个）")
+            else:
+                u = cans[0]
+                if not u.startswith("https://www.caizhe.org/"):
+                    probs.append(f"canonical 没指向 www 主域：{u}")
+                if u in canon_seen:
+                    probs.append(f"canonical 与 {canon_seen[u]} 重复：{u}")
+                else:
+                    canon_seen[u] = rel
+                # 404 页不该进 sitemap，但它自己也要有 canonical；不额外校验
+            if 'name="description"' not in blk:
+                probs.append("缺少 description")
+            else:
+                m = re.search(r'name="description" content="([^"]*)"', blk)
+                if m and not (40 <= len(m.group(1)) <= 200):
+                    probs.append(f"description 长度异常（{len(m.group(1))}）")
+            if 'property="og:title"' not in blk:
+                probs.append("缺少 og:title")
+            if "application/ld+json" not in blk:
+                probs.append("缺少结构化数据")
+        if probs:
+            errors.append(f"{rel}: {'; '.join(probs)}")
+            print(f"   ✗ {rel}: {'; '.join(probs)}")
+            seo_bad += 1
+        n_checked += 1
+    print(f"   共 {n_checked} 个页面，{n_checked - seo_bad} 个正常")
+
+    # sitemap 与页面必须对得上
+    sm_file = DIST / "sitemap.xml"
+    if not sm_file.exists():
+        errors.append("缺少 sitemap.xml")
+        print("   ✗ 缺少 sitemap.xml")
+    else:
+        sm = sm_file.read_text(encoding="utf-8")
+        locs = set(re.findall(r"<loc>([^<]+)</loc>", sm))
+        # 每个 canonical 都应该在 sitemap 里（404 除外）
+        for u, rel in sorted(canon_seen.items()):
+            if rel == "404.html":
+                continue
+            if u not in locs:
+                errors.append(f"{rel} 的 canonical 不在 sitemap 里：{u}")
+                print(f"   ✗ {rel} 不在 sitemap 里")
+        # sitemap 里的每个 URL 都必须真实存在
+        for u in sorted(locs):
+            p = u[len("https://www.caizhe.org/"):]
+            tgt = DIST / (p + "index.html" if (p == "" or p.endswith("/")) else p)
+            if not tgt.exists():
+                errors.append(f"sitemap 指向不存在的页面：{u}")
+                print(f"   ✗ sitemap 指向不存在的页面：{u}")
+        print(f"   ✓ sitemap.xml {len(locs)} 条，与 canonical 对应")
+
+    # robots.txt 必须声明 sitemap
+    rb = DIST / "robots.txt"
+    if not rb.exists():
+        errors.append("缺少 robots.txt")
+        print("   ✗ 缺少 robots.txt")
+    elif "Sitemap:" not in rb.read_text(encoding="utf-8"):
+        errors.append("robots.txt 没有声明 Sitemap")
+        print("   ✗ robots.txt 没有声明 Sitemap")
+    else:
+        print("   ✓ robots.txt 已声明 Sitemap")
+
+    # feed.xml 必须是合法 XML 且有 entry
+    fx = DIST / "feed.xml"
+    if not fx.exists():
+        errors.append("缺少 feed.xml")
+        print("   ✗ 缺少 feed.xml")
+    else:
+        import xml.etree.ElementTree as ET
+        try:
+            root = ET.fromstring(fx.read_text(encoding="utf-8"))
+            n = len(root.findall("{http://www.w3.org/2005/Atom}entry"))
+            if n == 0:
+                errors.append("feed.xml 没有任何 entry")
+                print("   ✗ feed.xml 没有 entry")
+            else:
+                print(f"   ✓ feed.xml 合法，{n} 条 entry")
+        except ET.ParseError as e:
+            errors.append(f"feed.xml 不是合法 XML：{e}")
+            print(f"   ✗ feed.xml 解析失败：{e}")
+
+    # og 分享图必须真实存在
+    for img in ("og-cover.png",):
+        if not (DIST / img).exists():
+            errors.append(f"分享图缺失：{img}（og:image 指向它）")
+            print(f"   ✗ 分享图缺失：{img}")
+        else:
+            print(f"   ✓ 分享图 {img}")
 
     # 待办项：不算错误
     print("\n[待办]")

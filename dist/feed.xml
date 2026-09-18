@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>caizhe.org</title>
+  <subtitle>Notes on Linux, Kubernetes, and cloud-native infrastructure</subtitle>
+  <link href="https://www.caizhe.org/feed.xml" rel="self"/>
+  <link href="https://www.caizhe.org/"/>
+  <id>https://www.caizhe.org/</id>
+  <updated>2026-09-18T00:00:00Z</updated>
+  <author><name>caizhe</name></author>
+  <entry>
+    <title>Pulling Images from AWS ECR in Kubernetes</title>
+    <link href="https://www.caizhe.org/ecr-image-pull-secret/"/>
+    <id>https://www.caizhe.org/ecr-image-pull-secret/</id>
+    <updated>2026-09-18T00:00:00Z</updated>
+    <summary>An ECR login token is valid for 12 hours. That is the entire lifespan of the credential you get from aws ecr get-login-password, and it is the thing that…</summary>
+  </entry>
+  <entry>
+    <title>RKE2 High Availability with Kube-VIP and Cilium</title>
+    <link href="https://www.caizhe.org/rke2-ha-install/"/>
+    <id>https://www.caizhe.org/rke2-ha-install/</id>
+    <updated>2026-09-18T00:00:00Z</updated>
+    <summary>This is the deployment manual for a three-node RKE2 control plane. It has three deliberate design choices worth stating up front, because they drive…</summary>
+  </entry>
+  <entry>
+    <title>Dynamic Database Credentials with Vault</title>
+    <link href="https://www.caizhe.org/vault-dynamic-db-creds/"/>
+    <id>https://www.caizhe.org/vault-dynamic-db-creds/</id>
+    <updated>2026-09-18T00:00:00Z</updated>
+    <summary>The usual pattern for application database access is a long-lived account with a password stored somewhere — a ConfigMap, a Secret, a config file, or…</summary>
+  </entry>
+  <entry>
+    <title>Installing OpenLDAP with Docker</title>
+    <link href="https://www.caizhe.org/docker-openldap/"/>
+    <id>https://www.caizhe.org/docker-openldap/</id>
+    <updated>2023-07-24T00:00:00Z</updated>
+    <summary>Or run it inside the container: Before adding users in LDAP you need a group. You can pick any organizational unit here — you will change it later anyway…</summary>
+  </entry>
+  <entry>
+    <title>Installing Elasticsearch with Docker</title>
+    <link href="https://www.caizhe.org/docker-elasticsearch/"/>
+    <id>https://www.caizhe.org/docker-elasticsearch/</id>
+    <updated>2023-06-14T00:00:00Z</updated>
+    <summary>Since 8.0, Elasticsearch requires HTTPS for inter-node cluster communication, so an SSL certificate has to be generated first. You can start a single-node…</summary>
+  </entry>
+  <entry>
+    <title>Installing a Redis Cluster with Docker</title>
+    <link href="https://www.caizhe.org/docker-redis-cluster/"/>
+    <id>https://www.caizhe.org/docker-redis-cluster/</id>
+    <updated>2023-06-14T00:00:00Z</updated>
+    <summary>Create a dedicated network (optional): Create the conf and data directories: Enter any one of the containers…</summary>
+  </entry>
+  <entry>
+    <title>Calling the Kubernetes API</title>
+    <link href="https://www.caizhe.org/kubernetes-api-calls/"/>
+    <id>https://www.caizhe.org/kubernetes-api-calls/</id>
+    <updated>2023-06-13T00:00:00Z</updated>
+    <summary>Three ways to call the Kubernetes API — the official SDK, the in-cluster service account token, and port 6443 with client certs.</summary>
+  </entry>
+  <entry>
+    <title>Installing Keepalived with Docker</title>
+    <link href="https://www.caizhe.org/docker-keepalived/"/>
+    <id>https://www.caizhe.org/docker-keepalived/</id>
+    <updated>2023-03-13T00:00:00Z</updated>
+    <summary>Running Keepalived under Docker for a floating VIP: the master and backup node configs, health checks, and how the failover behaves.</summary>
+  </entry>
+  <entry>
+    <title>High-Availability Kubernetes 1.22 Installation</title>
+    <link href="https://www.caizhe.org/kubernetes-1-22-ha-install/"/>
+    <id>https://www.caizhe.org/kubernetes-1-22-ha-install/</id>
+    <updated>2023-03-13T00:00:00Z</updated>
+    <summary>A high-availability Kubernetes 1.22 cluster from bare Ubuntu: kernel prerequisites, containerd, kubeadm, the Aliyun mirror, and ingress.</summary>
+  </entry>
+  <entry>
+    <title>Common containerd Commands</title>
+    <link href="https://www.caizhe.org/containerd-commands/"/>
+    <id>https://www.caizhe.org/containerd-commands/</id>
+    <updated>2023-03-02T00:00:00Z</updated>
+    <summary>A practical ctr cheat sheet — pull, list, tag, remove, mount, export, and import images, plus the content digest not found error.</summary>
+  </entry>
+  <entry>
+    <title>Installing containerd</title>
+    <link href="https://www.caizhe.org/containerd-install/"/>
+    <id>https://www.caizhe.org/containerd-install/</id>
+    <updated>2023-03-01T00:00:00Z</updated>
+    <summary>The default config file is /etc/containerd/config.toml, generated with the command below.</summary>
+  </entry>
+  <entry>
+    <title>Purging Large Files from a GitLab Repository</title>
+    <link href="https://www.caizhe.org/gitlab-purge-large-files/"/>
+    <id>https://www.caizhe.org/gitlab-purge-large-files/</id>
+    <updated>2023-03-01T00:00:00Z</updated>
+    <summary>Everyone else can then re-clone the project. Reference: https://www.msnao.com/2021/06/15/5031.html</summary>
+  </entry>
+  <entry>
+    <title>GlusterFS Distributed Storage</title>
+    <link href="https://www.caizhe.org/glusterfs-distributed-storage/"/>
+    <id>https://www.caizhe.org/glusterfs-distributed-storage/</id>
+    <updated>2019-09-13T00:00:00Z</updated>
+    <summary>GlusterFS distributed versus replicated volumes, how brick hashing places files, and the trade-offs between the two volume types.</summary>
+  </entry>
+  <entry>
+    <title>The Difference a Trailing Slash Makes in Nginx</title>
+    <link href="https://www.caizhe.org/nginx-trailing-slash/"/>
+    <id>https://www.caizhe.org/nginx-trailing-slash/</id>
+    <updated>2019-03-02T00:00:00Z</updated>
+    <summary>Why a trailing slash changes Nginx behaviour — the difference between location and proxy_pass rules, with test URLs and both cases.</summary>
+  </entry>
+  <entry>
+    <title>Bind with DLZ and a MySQL Backend</title>
+    <link href="https://www.caizhe.org/bind-dlz/"/>
+    <id>https://www.caizhe.org/bind-dlz/</id>
+    <updated>2018-08-02T00:00:00Z</updated>
+    <summary>Building BIND with DLZ and a MySQL backend: dependencies, the schema, named.conf, and removing the anonymous users that break the build.</summary>
+  </entry>
+  <entry>
+    <title>ClamAV on Linux</title>
+    <link href="https://www.caizhe.org/clamav/"/>
+    <id>https://www.caizhe.org/clamav/</id>
+    <updated>2018-03-13T00:00:00Z</updated>
+    <summary>I have been looking into security lately and noticed there are not many antivirus options on Linux. Today I want to introduce ClamAV, an open-source…</summary>
+  </entry>
+  <entry>
+    <title>LVS + Keepalived</title>
+    <link href="https://www.caizhe.org/lvs-keepalived/"/>
+    <id>https://www.caizhe.org/lvs-keepalived/</id>
+    <updated>2017-09-13T00:00:00Z</updated>
+    <summary>I had some spare time recently and went back over high-availability Keepalived and LVS reverse proxying. It is a classic setup, so I put together a…</summary>
+  </entry>
+  <entry>
+    <title>Let's Encrypt with acme.sh</title>
+    <link href="https://www.caizhe.org/letsencrypt-acme-sh/"/>
+    <id>https://www.caizhe.org/letsencrypt-acme-sh/</id>
+    <updated>2017-06-13T00:00:00Z</updated>
+    <summary>With HTTPS becoming the norm, Let’s Encrypt has been a huge part of that. There are plenty of guides online and the process itself is simple — far more…</summary>
+  </entry>
+  <entry>
+    <title>Redis Tuning</title>
+    <link href="https://www.caizhe.org/redis-tuning/"/>
+    <id>https://www.caizhe.org/redis-tuning/</id>
+    <updated>2017-03-02T00:00:00Z</updated>
+    <summary>Redis offers several levels of persistence: Redis can use both AOF and RDB persistence at the same time. In that case, when Redis restarts it prefers the…</summary>
+  </entry>
+  <entry>
+    <title>301 vs 302: What's the Difference</title>
+    <link href="https://www.caizhe.org/301-vs-302-redirect/"/>
+    <id>https://www.caizhe.org/301-vs-302-redirect/</id>
+    <updated>2016-12-11T00:00:00Z</updated>
+    <summary>Both the 301 and 302 status codes mean “redirect”. That is, after the browser receives this status code from the server, it automatically jumps to a new…</summary>
+  </entry>
+  <entry>
+    <title>KVM Virtual Machines</title>
+    <link href="https://www.caizhe.org/kvm-virtual-machines/"/>
+    <id>https://www.caizhe.org/kvm-virtual-machines/</id>
+    <updated>2016-05-02T00:00:00Z</updated>
+    <summary>Recently I had some spare time and compared Docker with KVM. Docker is impressive and has a lot of room to grow, but it still falls short in a few areas —…</summary>
+  </entry>
+  <entry>
+    <title>Linux System Tuning</title>
+    <link href="https://www.caizhe.org/linux-system-tuning/"/>
+    <id>https://www.caizhe.org/linux-system-tuning/</id>
+    <updated>2016-03-02T00:00:00Z</updated>
+    <summary>Production Linux tuning: trimming startup services, hardening SSH, and the kernel parameters for ports, TIME_WAIT, and connection tracking.</summary>
+  </entry>
+  <entry>
+    <title>Nginx Tuning</title>
+    <link href="https://www.caizhe.org/nginx-tuning/"/>
+    <id>https://www.caizhe.org/nginx-tuning/</id>
+    <updated>2016-03-02T00:00:00Z</updated>
+    <summary>Nginx tuning splits into two directions: performance optimization and security hardening. Configure multiple worker processes: Tune the max connections…</summary>
+  </entry>
+</feed>
