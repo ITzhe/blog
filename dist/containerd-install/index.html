@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing containerd</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Installing containerd</h1>
+      <div class="article-meta">
+        <time datetime="2023-03-01">Mar 01, 2023</time>
+        <span>1 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <ol>
+  <li>
+    Download the dependency package:
+  </li>
+</ol>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>wget https://github.com/containerd/containerd/releases/download/v1.6.4/cri-containerd-cni-1.6.4-linux-amd64.tar.gz
+</span></span><span class=line><span class=cl><span class=c1># If you cannot reach GitHub, use this mirror instead</span>
+</span></span><span class=line><span class=cl><span class=c1># wget https://download.fastgit.org/containerd/containerd/releases/download/v1.6.4/cri-containerd-cni-1.6.4-linux-amd64.tar.gz</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<ol start=2>
+  <li>
+    Extract:
+  </li>
+</ol>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>tar -C / -xzf cri-containerd-cni-1.6.4-linux-amd64.tar.gz
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<ol start=3>
+  <li>
+    Add the configuration file:
+  </li>
+</ol>
+<p>
+  The default config file is
+  <code>/etc/containerd/config.toml</code>
+  , generated with the command below.
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p /etc/containerd
+</span></span><span class=line><span class=cl>containerd config default &gt; /etc/containerd/config.toml
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<ol start=4>
+  <li>
+    Start containerd:
+  </li>
+</ol>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>systemctl <span class=nb>enable</span> containerd --now
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<ol start=5>
+  <li>
+    Verify containerd:
+  </li>
+</ol>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># ctr version</span>
+</span></span><span class=line><span class=cl>Client:
+</span></span><span class=line><span class=cl>  Version:  v1.6.4
+</span></span><span class=line><span class=cl>  Revision: 72cec4be58a9eb6b2910f5d10f1c01ca47d231c0
+</span></span><span class=line><span class=cl>  Go version: go1.16.6
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Server:
+</span></span><span class=line><span class=cl>  Version:  v1.6.4
+</span></span><span class=line><span class=cl>  Revision: 72cec4be58a9eb6b2910f5d10f1c01ca47d231c0
+</span></span><span class=line><span class=cl>  UUID: 38613830-5cd0-4bc4-81b4-2bcdced721d3
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing a Redis Cluster with Docker</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Installing a Redis Cluster with Docker</h1>
+      <div class="article-meta">
+        <time datetime="2023-06-14">Jun 14, 2023</time>
+        <span>3 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <p>
+  Redis 5.0.7
+</p>
+<p>
+  Create the cluster directory:
+</p>
+<pre><code>mkdir /home/redis-cluster
+</code></pre>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>port <span class=si>${</span><span class=nv>PORT</span><span class=si>}</span>
+</span></span><span class=line><span class=cl>protected-mode no
+</span></span><span class=line><span class=cl>cluster-enabled yes
+</span></span><span class=line><span class=cl>cluster-config-file nodes.conf
+</span></span><span class=line><span class=cl>cluster-node-timeout <span class=m>5000</span>
+</span></span><span class=line><span class=cl>cluster-announce-ip 192.168.21.28 // your own server IP
+</span></span><span class=line><span class=cl>cluster-announce-port <span class=si>${</span><span class=nv>PORT</span><span class=si>}</span>
+</span></span><span class=line><span class=cl>cluster-announce-bus-port 1<span class=si>${</span><span class=nv>PORT</span><span class=si>}</span>
+</span></span><span class=line><span class=cl>appendonly yes
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Create a dedicated network (optional):
+</p>
+<pre><code>docker network create redis-net
+</code></pre>
+<p>
+  Create the
+  <code>conf</code>
+  and
+  <code>data</code>
+  directories:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=k>for</span> port in <span class=sb>`</span>seq <span class=m>7000</span> 7005<span class=sb>`</span><span class=p>;</span> <span class=k>do</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  mkdir -p ./<span class=si>${</span><span class=nv>port</span><span class=si>}</span>/conf <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=o>&amp;&amp;</span> <span class=nv>PORT</span><span class=o>=</span><span class=si>${</span><span class=nv>port</span><span class=si>}</span> envsubst &lt; ./redis-cluster.tmpl &gt; ./<span class=si>${</span><span class=nv>port</span><span class=si>}</span>/conf/redis.conf <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=o>&amp;&amp;</span> mkdir -p ./<span class=si>${</span><span class=nv>port</span><span class=si>}</span>/data<span class=p>;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span><span class=k>done</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Create the Redis containers:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=k>for</span> port in <span class=sb>`</span>seq <span class=m>7000</span> 7005<span class=sb>`</span><span class=p>;</span> <span class=k>do</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  docker run -d -ti -p <span class=si>${</span><span class=nv>port</span><span class=si>}</span>:<span class=si>${</span><span class=nv>port</span><span class=si>}</span> -p 1<span class=si>${</span><span class=nv>port</span><span class=si>}</span>:1<span class=si>${</span><span class=nv>port</span><span class=si>}</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v /home/redis-cluster/<span class=si>${</span><span class=nv>port</span><span class=si>}</span>/conf/redis.conf:/usr/local/etc/redis/redis.conf <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v /home/redis-cluster/<span class=si>${</span><span class=nv>port</span><span class=si>}</span>/data:/data <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --restart always --name redis-<span class=si>${</span><span class=nv>port</span><span class=si>}</span> --net redis-net <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --sysctl net.core.somaxconn<span class=o>=</span><span class=m>1024</span> redis redis-server /usr/local/etc/redis/redis.conf<span class=p>;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span><span class=k>done</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Enter any one of the containers:
+</p>
+<pre><code>docker exec -it e61133e98d01 /bin/bash
+</code></pre>
+<p>
+  Create the cluster:
+</p>
+<pre><code>redis-cli --cluster create 192.168.21.28:7000 192.168.21.28:7001 192.168.21.28:7002 192.168.21.28:7002 192.168.21.28:7003 192.168.21.28:7004 192.168.21.28:7005 --cluster-replicas 1
+</code></pre>
+<p>
+  Output:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-txt data-lang=txt><span class=line><span class=cl>&gt;&gt;&gt; Performing hash slots allocation on 7 nodes...
+</span></span><span class=line><span class=cl>Master[0] -&gt; Slots 0 - 5460
+</span></span><span class=line><span class=cl>Master[1] -&gt; Slots 5461 - 10922
+</span></span><span class=line><span class=cl>Master[2] -&gt; Slots 10923 - 16383
+</span></span><span class=line><span class=cl>Adding replica 192.168.21.28:7003 to 192.168.21.28:7000
+</span></span><span class=line><span class=cl>Adding replica 192.168.21.28:7004 to 192.168.21.28:7001
+</span></span><span class=line><span class=cl>Adding replica 192.168.21.28:7005 to 192.168.21.28:7002
+</span></span><span class=line><span class=cl>Adding extra replicas...
+</span></span><span class=line><span class=cl>Adding replica 192.168.21.28:7002 to 192.168.21.28:7000
+</span></span><span class=line><span class=cl>&gt;&gt;&gt; Trying to optimize slaves allocation for anti-affinity
+</span></span><span class=line><span class=cl>[WARNING] Some slaves are in the same host as their master
+</span></span><span class=line><span class=cl>M: d4b82300dfacedeaf7d50e0c3c06d9b7662603e1 192.168.21.28:7000
+</span></span><span class=line><span class=cl>   slots:[0-5460] (5461 slots) master
+</span></span><span class=line><span class=cl>M: f89d211a74b1e71b4b3aa12ae9491cd0657c9f06 192.168.21.28:7001
+</span></span><span class=line><span class=cl>   slots:[5461-10922] (5462 slots) master
+</span></span><span class=line><span class=cl>M: d02714dc30ed747bc23d8387684d0389b1552a61 192.168.21.28:7002
+</span></span><span class=line><span class=cl>   slots:[10923-16383] (5461 slots) master
+</span></span><span class=line><span class=cl>S: d02714dc30ed747bc23d8387684d0389b1552a61 192.168.21.28:7002
+</span></span><span class=line><span class=cl>   replicates f89d211a74b1e71b4b3aa12ae9491cd0657c9f06
+</span></span><span class=line><span class=cl>S: 5188757b51c2fc804ab9a09779cc83f3dd08e7e2 192.168.21.28:7003
+</span></span><span class=line><span class=cl>   replicates d4b82300dfacedeaf7d50e0c3c06d9b7662603e1
+</span></span><span class=line><span class=cl>S: 985e81724ea9b5664a19961f4a758689290856b2 192.168.21.28:7004
+</span></span><span class=line><span class=cl>   replicates d02714dc30ed747bc23d8387684d0389b1552a61
+</span></span><span class=line><span class=cl>S: 2f12b2eb90938cf2469bd6209f85dc42925e2129 192.168.21.28:7005
+</span></span><span class=line><span class=cl>   replicates d4b82300dfacedeaf7d50e0c3c06d9b7662603e1
+</span></span><span class=line><span class=cl>Can I set the above configuration? (type &#39;yes&#39; to accept): yes
+</span></span><span class=line><span class=cl>&gt;&gt;&gt; Nodes configuration updated
+</span></span><span class=line><span class=cl>&gt;&gt;&gt; Assign a different config epoch to each node
+</span></span><span class=line><span class=cl>&gt;&gt;&gt; Sending CLUSTER MEET messages to join the cluster
+</span></span><span class=line><span class=cl>Waiting for the cluster to join
+</span></span><span class=line><span class=cl>....
+</span></span><span class=line><span class=cl>&gt;&gt;&gt; Performing Cluster Check (using node 192.168.21.28:7000)
+</span></span><span class=line><span class=cl>M: d4b82300dfacedeaf7d50e0c3c06d9b7662603e1 192.168.21.28:7000
+</span></span><span class=line><span class=cl>   slots:[0-5460] (5461 slots) master
+</span></span><span class=line><span class=cl>   2 additional replica(s)
+</span></span><span class=line><span class=cl>M: d02714dc30ed747bc23d8387684d0389b1552a61 192.168.21.28:7002
+</span></span><span class=line><span class=cl>   slots:[10923-16383] (5461 slots) master
+</span></span><span class=line><span class=cl>   1 additional replica(s)
+</span></span><span class=line><span class=cl>S: 985e81724ea9b5664a19961f4a758689290856b2 192.168.21.28:7004
+</span></span><span class=line><span class=cl>   slots: (0 slots) slave
+</span></span><span class=line><span class=cl>   replicates d02714dc30ed747bc23d8387684d0389b1552a61
+</span></span><span class=line><span class=cl>S: 2f12b2eb90938cf2469bd6209f85dc42925e2129 192.168.21.28:7005
+</span></span><span class=line><span class=cl>   slots: (0 slots) slave
+</span></span><span class=line><span class=cl>   replicates d4b82300dfacedeaf7d50e0c3c06d9b7662603e1
+</span></span><span class=line><span class=cl>S: 5188757b51c2fc804ab9a09779cc83f3dd08e7e2 192.168.21.28:7003
+</span></span><span class=line><span class=cl>   slots: (0 slots) slave
+</span></span><span class=line><span class=cl>   replicates d4b82300dfacedeaf7d50e0c3c06d9b7662603e1
+</span></span><span class=line><span class=cl>M: f89d211a74b1e71b4b3aa12ae9491cd0657c9f06 192.168.21.28:7001
+</span></span><span class=line><span class=cl>   slots:[5461-10922] (5462 slots) master
+</span></span><span class=line><span class=cl>[OK] All nodes agree about slots configuration.
+</span></span><span class=line><span class=cl>&gt;&gt;&gt; Check for open slots...
+</span></span><span class=line><span class=cl>&gt;&gt;&gt; Check slots coverage...
+</span></span><span class=line><span class=cl>[OK] All 16384 slots covered.
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Connection test:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>e61133e98d01        redis                                 <span class=s2>&#34;docker-entrypoint.s…&#34;</span>   <span class=m>25</span> minutes ago      Up <span class=m>25</span> minutes       0.0.0.0:7005-&gt;7005/tcp, 6379/tcp, 0.0.0.0:17005-&gt;17005/tcp                                   redis-7005
+</span></span><span class=line><span class=cl>4860f478463f        redis                                 <span class=s2>&#34;docker-entrypoint.s…&#34;</span>   <span class=m>25</span> minutes ago      Up <span class=m>25</span> minutes       0.0.0.0:7004-&gt;7004/tcp, 6379/tcp, 0.0.0.0:17004-&gt;17004/tcp                                   redis-7004
+</span></span><span class=line><span class=cl>16d6bb61118b        redis                                 <span class=s2>&#34;docker-entrypoint.s…&#34;</span>   <span class=m>25</span> minutes ago      Up <span class=m>25</span> minutes       0.0.0.0:7003-&gt;7003/tcp, 6379/tcp, 0.0.0.0:17003-&gt;17003/tcp                                   redis-7003
+</span></span><span class=line><span class=cl>7b6070c17724        redis                                 <span class=s2>&#34;docker-entrypoint.s…&#34;</span>   <span class=m>25</span> minutes ago      Up <span class=m>25</span> minutes       0.0.0.0:7002-&gt;7002/tcp, 6379/tcp, 0.0.0.0:17002-&gt;17002/tcp                                   redis-7002
+</span></span><span class=line><span class=cl>afd85937ac9a        redis                                 <span class=s2>&#34;docker-entrypoint.s…&#34;</span>   <span class=m>25</span> minutes ago      Up <span class=m>25</span> minutes       0.0.0.0:7001-&gt;7001/tcp, 6379/tcp, 0.0.0.0:17001-&gt;17001/tcp                                   redis-7001
+</span></span><span class=line><span class=cl>0298db107972        redis                                 <span class=s2>&#34;docker-entrypoint.s…&#34;</span>   <span class=m>25</span> minutes ago      Up <span class=m>25</span> minutes       0.0.0.0:7000-&gt;7000/tcp, 6379/tcp, 0.0.0.0:17000-&gt;17000/tcp                                   redis-7000
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>redis-cli -c -h 192.168.21.28 -p <span class=m>7002</span>
+</span></span><span class=line><span class=cl>192.168.21.28:7002&gt; CLUSTER NODES
+</span></span><span class=line><span class=cl>985e81724ea9b5664a19961f4a758689290856b2 192.168.21.28:7004@17004 slave d02714dc30ed747bc23d8387684d0389b1552a61 <span class=m>0</span> <span class=m>1576224546000</span> <span class=m>6</span> connected
+</span></span><span class=line><span class=cl>2f12b2eb90938cf2469bd6209f85dc42925e2129 192.168.21.28:7005@17005 slave d4b82300dfacedeaf7d50e0c3c06d9b7662603e1 <span class=m>0</span> <span class=m>1576224547233</span> <span class=m>1</span> connected
+</span></span><span class=line><span class=cl>5188757b51c2fc804ab9a09779cc83f3dd08e7e2 192.168.21.28:7003@17003 slave d4b82300dfacedeaf7d50e0c3c06d9b7662603e1 <span class=m>0</span> <span class=m>1576224546227</span> <span class=m>5</span> connected
+</span></span><span class=line><span class=cl>f89d211a74b1e71b4b3aa12ae9491cd0657c9f06 192.168.21.28:7001@17001 master - <span class=m>0</span> <span class=m>1576224546000</span> <span class=m>2</span> connected 5461-10922
+</span></span><span class=line><span class=cl>d02714dc30ed747bc23d8387684d0389b1552a61 192.168.21.28:7002@17002 myself,master - <span class=m>0</span> <span class=m>1576224544000</span> <span class=m>3</span> connected 10923-16383
+</span></span><span class=line><span class=cl>d4b82300dfacedeaf7d50e0c3c06d9b7662603e1 192.168.21.28:7000@17000 master - <span class=m>0</span> <span class=m>1576224547000</span> <span class=m>1</span> connected 0-5460
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  References:
+</p>
+<p>
+  <a class=link href=https://blog.csdn.net/tszxlzc/article/details/86565327 target=_blank rel=noopener>https://blog.csdn.net/tszxlzc/article/details/86565327</a>
+</p>
+<p>
+  <a class=link href=https://www.cnblogs.com/lianggp/articles/8136222.html target=_blank rel=noopener>https://www.cnblogs.com/lianggp/articles/8136222.html</a>
+</p>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

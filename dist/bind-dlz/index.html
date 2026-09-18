@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bind with DLZ and a MySQL Backend</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Bind with DLZ and a MySQL Backend</h1>
+      <div class="article-meta">
+        <time datetime="2018-08-02">Aug 02, 2018</time>
+        <span>5 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <p>
+  Install the dependencies:
+</p>
+<pre><code>yum install openssl-devel -y
+yum groupinstall &quot;Development Tools&quot; -y
+</code></pre>
+<p>
+  Install the database:
+</p>
+<pre><code>yum install mariadb-server mariadb-devel -y
+systemctl start mariadb
+</code></pre>
+<p>
+  Delete the anonymous users first, otherwise the build will fail:
+</p>
+<pre><code>delete from mysql.user where user='';
+create database bind;
+</code></pre>
+<p>
+  Install bind:
+</p>
+<pre><code>tar xf bind-9.11.5.tar.gz
+cd bind-9.11.5/
+./configure --with-dlz-mysql --enable-largefile --enable-threads=no --prefix=/usr/local/bind --with-openssl
+# I tried enabling threads but it errored out, so it stays single-process.
+# All DNS queries hit the replica; the primary only handles writes and
+# changes and then syncs them down. The replica just uses the dns config
+# files, so performance is not affected.
+make -j 4
+make install
+groupadd -r named
+useradd -s /sbin/nologin -M -r -g named named
+chown -R named:named /usr/local/bind
+echo &quot;export PATH=${PATH}:/usr/local/bind/sbin/:/usr/local/bind/bin/&quot; &gt;&gt; /etc/profile
+source /etc/profile
+</code></pre>
+<p>
+  Configure bind:
+</p>
+<pre><code>cd /usr/local/bind/etc/
+rndc-confgen -r /dev/urandom &gt;rndc.conf         # if this errors, just use rndc-confgen &gt;rndc.conf
+mkdir /var/named/
+wget http://www.internic.net/domain/named.root      # download the root name server hints
+chown -R named:named /var/named/
+</code></pre>
+<p>
+  Create the
+  <code>named.conf</code>
+  configuration file:
+</p>
+<pre><code>[root@linux-node3 etc]# cat named.conf
+options {
+        directory &quot;/var/named/&quot;;
+        recursion yes;
+        listen-on port 53    { any; };
+        dump-file &quot;/var/named/data/cache_dump.db&quot;;
+        statistics-file &quot;/var/named/data/named_stats.txt&quot;;
+        allow-query { any; };
+        blackhole { none; };
+ };
+</code></pre>
+<h1 id=start-it-and-test>
+  Start it and test
+</h1>
+<pre><code>named -u named -n 1 -c /usr/local/bind/etc/named.conf
+netstat -lntup|grep 53
+dig www.baidu.com @127.0.0.1
+</code></pre>
+<h1 id=configure-dlz>
+  Configure DLZ
+</h1>
+<pre><code>create database bind;
+</code></pre>
+<p>
+  Create the tables:
+</p>
+<pre><code>CREATE TABLE IF NOT EXISTS `dns_records` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `zone` varchar(255) NOT NULL,
+  `host` varchar(255) NOT NULL DEFAULT '@',
+  `type` enum('A','MX','CNAME','NS','SOA','PTR','TXT','AAAA','SVR','URL') NOT NULL,
+  `data` varchar(255) DEFAULT NULL,
+  `ttl` int(11) NOT NULL DEFAULT '3600',
+  `mx_priority` int(11) DEFAULT NULL,
+  `view`  enum('any', 'Telecom', 'Unicom', 'CMCC', 'ours') NOT NULL  DEFAULT &quot;any&quot; ,
+  `priority` tinyint UNSIGNED NOT NULL DEFAULT '255',
+  `refresh` int(11) NOT NULL DEFAULT '28800',
+  `retry` int(11) NOT NULL DEFAULT '14400',
+  `expire` int(11) NOT NULL DEFAULT '86400',
+  `minimum` int(11) NOT NULL DEFAULT '86400',
+  `serial` bigint(20) NOT NULL DEFAULT '2015050917',
+  `resp_person` varchar(64) NOT NULL DEFAULT 'ddns.net',
+  `primary_ns` varchar(64) NOT NULL DEFAULT 'ns.ddns.net.',
+  PRIMARY KEY (`id`),
+  KEY `type` (`type`),
+  KEY `host` (`host`),
+  KEY `zone` (`zone`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE `dns_xfr` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `zone` varchar(255) NOT NULL,
+  `client` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `zone` (`zone`),
+  KEY `client` (`client`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+</code></pre>
+<p>
+  Create the user:
+</p>
+<pre><code>grant all privileges on bind.* to named@'%' identified by &quot;named&quot;;
+flush privileges;
+</code></pre>
+<p>
+  The DLZ section in
+  <code>named.conf</code>
+  :
+</p>
+<pre><code>dlz &quot;myzone&quot; {
+        database &quot;mysql
+           {host=192.168.56.11 port=3306 ssl=false dbname=bind user=named pass=named}
+           {SELECT zone FROM dns_records WHERE zone = '$zone$' LIMIT 1}
+           {SELECT ttl, type, mx_priority, IF(type = 'TXT', CONCAT('\&quot;',data,'\&quot;'), data) AS data FROM dns_records WHERE zone = '$zone$' AND host = '$record$' AND type &lt;&gt; '
+SOA' AND type &lt;&gt; 'NS'}
+           {SELECT ttl, type, data, primary_ns, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = '$zone$' AND (type = 'SOA' OR type='NS')
+}
+           {SELECT ttl, type, host, mx_priority, IF(type = 'TXT', CONCAT('\&quot;',data,'\&quot;'), data) AS data, resp_contact, serial, refresh, retry, expire, minimum FROM dns_reco
+rds WHERE zone = '$zone$' AND type &lt;&gt; 'SOA'}
+           {SELECT zone FROM dns_xfr WHERE ( zone='$zone$' OR zone='*' ) AND client = '$client$' LIMIT 1}&quot;;
+};
+</code></pre>
+<p>
+  Insert some data.
+</p>
+<p>
+  <code>dns_records</code>
+  :
+</p>
+<pre><code>insert into bind.dns_records (zone, host, type, data, ttl) VALUES ('test.info', 'www', 'A', '1.1.1.1', '60');
+insert into bind.dns_records (zone, host, type, data, ttl) VALUES ('test.info', 'bbs', 'A', '1.1.1.1', '60');
+</code></pre>
+<p>
+  <code>dns_xfr</code>
+  :
+</p>
+<pre><code>1	*	10.31.63.30
+2	*	10.31.63.30
+3	*	192.168.56.12
+</code></pre>
+<p>
+  Restart bind and test again:
+</p>
+<pre><code>named -u named -n 1 -c /usr/local/bind/etc/named.conf
+netstat -lntup|grep 53
+dig @127.0.0.1
+dig www.test.info @127.0.0.1
+dig bbs.test.info @127.0.0.1
+</code></pre>
+<h1 id=the-replica>
+  The replica
+</h1>
+<p>
+  <code>named.conf</code>
+  :
+</p>
+<pre><code>options {
+        directory &quot;/usr/local/bind/etc/&quot;;
+        recursion yes;
+        listen-on port 53    { any; };
+        dump-file &quot;/var/named/data/cache_dump.db&quot;;
+        statistics-file &quot;/var/named/data/named_stats.txt&quot;;
+        allow-query { any; };
+ };
+
+key &quot;rndc-key&quot; {
+        algorithm hmac-md5;
+        secret &quot;J+jRGi+v0DvKOoUoY6pWhQ==&quot;;
+};
+
+controls {
+        inet 127.0.0.1 port 953
+        allow { any; } keys { &quot;rndc-key&quot;; };
+};
+
+include &quot;/usr/local/bind/etc/view.conf&quot;;
+</code></pre>
+<p>
+  <code>view.conf</code>
+  :
+</p>
+<pre><code>view &quot;View&quot; {
+    zone &quot;.&quot;  IN {
+    	type hint;
+    	file &quot;named.root&quot;;
+    };
+
+    zone &quot;u.com&quot; IN {
+         type    slave;
+         masters { 192.168.56.11; };
+         file    &quot;slaves/u.com.zone&quot;;
+    };
+};
+</code></pre>
+<hr>
+<p>
+  And here is an enterprise-grade primary configuration file for reference:
+</p>
+<pre><code>options {
+        listen-on port 53 { any; };
+        listen-on-v6 port 53 { none; };
+        directory     &quot;/usr/local/bind-dlz/var/named&quot;;
+        dump-file     &quot;/usr/local/bind-dlz/var/named/data/cache_dump.db&quot;;
+        statistics-file &quot;/usr/local/bind-dlz/var/named/data/named_stats.txt&quot;;
+        memstatistics-file &quot;/usr/local/bind-dlz/var/named/data/named_mem_stats.txt&quot;;
+        //max-cache-size 1024m;
+        zone-statistics yes;
+        tcp-clients 80000;
+        stacksize   1000m;
+        clients-per-query   100000;
+        max-clients-per-query   100000;
+        recursion yes;
+        version &quot;1.0.0&quot;;
+        dnssec-enable no;
+        dnssec-validation no;
+        bindkeys-file &quot;/etc/bind-dlz/named.iscdlv.key&quot;;
+        managed-keys-directory &quot;/usr/local/bind-dlz/var/named/dynamic&quot;;
+        pid-file &quot;/usr/local/bind-dlz/var/run/named.pid&quot;;
+        session-keyfile &quot;/usr/local/bind-dlz/var/run/session.key&quot;;
+
+        masterfile-format text;
+        serial-query-rate 1000;
+        transfers-out 20000;
+        empty-zones-enable no;
+        request-ixfr no;
+
+        allow-update { none; };
+        allow-update-forwarding { none; };
+        allow-query     { any; };
+        allow-query-cache { any ;};
+        allow-transfer { slave_list; };
+        allow-recursion { any; };
+        #allow-recursion { any; };
+        notify yes;
+
+        allow-notify { slave_list; };
+
+        forwarders { 114.114.114.114;119.29.29.29; };
+
+};
+
+zone &quot;.&quot; IN {
+    type hint;
+    file &quot;named.ca&quot;;
+};
+
+include &quot;/etc/bind-dlz/named.rfc1912.zones&quot;;
+include &quot;/etc/bind-dlz/named.root.key&quot;;
+include &quot;/etc/bind-dlz/rndc.key&quot;;
+
+key &quot;TSIG-key&quot; {
+        algorithm hmac-md5;
+        secret &quot;J+jRGi+v0DvKOoUoY6pWhQ==&quot;;
+};
+
+controls {
+      inet 127.0.0.1 port 953
+      allow { any; } keys { &quot;rndc-key&quot;; };
+};
+
+statistics-channels {
+        inet 127.0.0.1 port 8653 allow { 127.0.0.1; };
+};
+
+################### log ########################
+logging {
+        channel default_debug {
+                file &quot;data/named.run&quot;;
+                severity dynamic;
+        };
+};
+
+################### acl ########################
+acl &quot;lan_list&quot; {
+        172.16.0.0/12;
+        192.168.0.0/16;
+        10.0.0.0/8;
+        127.0.0.1;
+};
+
+acl &quot;slave_list&quot; {
+        172.16.1.1;
+        172.16.1.252;
+        10.10.20.21;
+        10.10.20.22;
+        192.168.56.12;
+};
+
+################### zone ########################
+dlz &quot;myzone&quot; {
+        database &quot;mysql
+           {host=192.168.56.11 port=3306 ssl=false dbname=bind user=named pass=named}
+           {SELECT zone FROM dns_records WHERE zone = '$zone$' LIMIT 1}
+           {SELECT ttl, type, mx_priority, IF(type = 'TXT', CONCAT('\&quot;',data,'\&quot;'), data) AS data FROM dns_records WHERE zone = '$zone$' AND host = '$record$' AND type &lt;&gt; 'SOA' AND type &lt;&gt; 'NS'}
+           {SELECT ttl, type, data, primary_ns, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = '$zone$' AND (type = 'SOA' OR type='NS')}
+           {SELECT ttl, type, host, mx_priority, IF(type = 'TXT', CONCAT('\&quot;',data,'\&quot;'), data) AS data, resp_contact, serial, refresh, retry, expire, minimum FROM dns_records WHERE zone = '$zone$' AND type &lt;&gt; 'SOA'}
+           {SELECT zone FROM dns_xfr WHERE ( zone='$zone$' OR zone='*' ) AND client = '$client$' LIMIT 1}&quot;;
+};
+</code></pre>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

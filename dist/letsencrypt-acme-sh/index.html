@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Let&#x27;s Encrypt with acme.sh</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Let&#x27;s Encrypt with acme.sh</h1>
+      <div class="article-meta">
+        <time datetime="2017-06-13">Jun 13, 2017</time>
+        <span>2 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <hr>
+<p>
+  With HTTPS becoming the norm, Let&rsquo;s Encrypt has been a huge part of that. There are plenty of guides online and the process itself is simple — far more material exists now than in early 2017. Unfortunately the quality varies wildly: half the guides fail partway through. It is 2016 technology, and a few simple steps still manage to error out?!
+</p>
+<p>
+  Official GitHub:
+  <a class=link href=https://github.com/Neilpang/acme.sh target=_blank rel=noopener>https://github.com/Neilpang/acme.sh</a>
+</p>
+<hr>
+<p>
+  Install the acme.sh script:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>curl  https://get.acme.sh <span class=p>|</span> sh
+</span></span><span class=line><span class=cl><span class=c1># register an account</span>
+</span></span><span class=line><span class=cl>~/.acme.sh/acme.sh --register-account -m bob1317581669@gmail.com
+</span></span><span class=line><span class=cl><span class=o>[</span>Wed Feb <span class=m>22</span> 11:01:51 CST 2023<span class=o>]</span> No EAB credentials found <span class=k>for</span> ZeroSSL, let<span class=s1>&#39;s get one
+</span></span></span><span class=line><span class=cl><span class=s1>[Wed Feb 22 11:01:55 CST 2023] Registering account: https://acme.zerossl.com/v2/DV90
+</span></span></span><span class=line><span class=cl><span class=s1>[Wed Feb 22 11:02:02 CST 2023] Registered
+</span></span></span><span class=line><span class=cl><span class=s1>[Wed Feb 22 11:02:03 CST 2023] ACCOUNT_THUMBPRINT=&#39;</span>yiMmaNSo-A27AG-jSqTkWrKKs7PgL7X9rPXApgxxxxx<span class=err>&#39;</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<h1 id=single-domain-certificate>
+  Single-domain certificate
+</h1>
+<p>
+  Verify domain ownership:
+</p>
+<pre><code>acme.sh --issue -d cmdb.caizhe.org --nginx
+</code></pre>
+<p>
+  Install the certificate:
+</p>
+<p>
+  (The certificate is already issued and sits in the acme directory, but if you do not want it there you can run this step.)
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl><span class=o>[</span>root@Bob-blog conf<span class=o>]</span><span class=c1># acme.sh --installcert -d cmdb.caizhe.org \</span>
+</span></span><span class=line><span class=cl>--keypath /application/nginx/conf/cmdb_ssl/cmdb.caizhe.org.key <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--fullchainpath /application/nginx/conf/cmdb_ssl/cmdb.caizhe.org.cer <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--reloadcmd <span class=s2>&#34;/application/nginx/sbin/nginx -s reload&#34;</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Check the domain status:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl><span class=o>[</span>root@Bob-blog conf<span class=o>]</span><span class=c1># acme.sh --list</span>
+</span></span><span class=line><span class=cl>Main_Domain      KeyLength  SAN_Domains  Created                       Renew
+</span></span><span class=line><span class=cl>cmdb.caizhe.org  <span class=s2>&#34;&#34;</span>         no           Wed Jun  <span class=m>5</span> 09:19:13 UTC <span class=m>2019</span>  Sun Aug  <span class=m>4</span> 09:19:13 UTC <span class=m>2019</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Renew the certificate (afterwards just add a cron job):
+</p>
+<pre><code>acme.sh --renew -d cmdb.caizhe.org --force
+</code></pre>
+<h1 id=wildcard-certificate>
+  Wildcard certificate
+</h1>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>export</span> <span class=nv>Ali_Key</span><span class=o>=</span><span class=s2>&#34;LTAI4FyNQRVTRaGc1xxxxx&#34;</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>Ali_Secret</span><span class=o>=</span><span class=s2>&#34;cE5Nhz8lRgCZ2lLxLP3ADjhIxxxxx&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>~/.acme.sh/acme.sh  --issue --dns dns_ali -d <span class=s1>&#39;caizhe.org&#39;</span> -d <span class=s1>&#39;*.caizhe.org&#39;</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Wildcard certificates must use DNS validation. Aliyun DNS and DNSPod are currently supported.
+</p>
+<p>
+  If your DNS provider has a supported API, it handles the validation and updates itself.
+</p>
+<hr>
+<p>
+  I have now been running Let&rsquo;s Encrypt across the whole site for close to two years with no problems. You can use it without worry.
+</p>
+<hr>
+<p>
+  Updating a wildcard certificate with certbot:
+</p>
+<pre><code>certbot-auto --server https://acme-v02.api.letsencrypt.org/directory -d &quot;*.xxx.com&quot; --manual --preferred-challenges dns-01 certonly
+</code></pre>
+<hr>
+<p>
+  Appendix: Nginx configuration
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>server <span class=o>{</span>
+</span></span><span class=line><span class=cl>        listen      80<span class=p>;</span>
+</span></span><span class=line><span class=cl>        server_name  cmdb.caizhe.org<span class=p>;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    	location /.well-known <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=nb>alias</span> /application/nginx/html/cmdb/.well-known<span class=p>;</span>
+</span></span><span class=line><span class=cl>    	<span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        rewrite ^<span class=o>(</span>.*<span class=o>)</span> https://<span class=nv>$server_name$1</span> last<span class=p>;</span>
+</span></span><span class=line><span class=cl>        error_page <span class=m>497</span> https://<span class=nv>$server_name$request_uri</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>	<span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>server <span class=o>{</span>
+</span></span><span class=line><span class=cl>    listen <span class=m>443</span> ssl<span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    server_name cmdb.caizhe.org<span class=p>;</span>
+</span></span><span class=line><span class=cl>	
+</span></span><span class=line><span class=cl>	ssl_certificate              /root/.acme.sh/cmdb.caizhe.org/cmdb.caizhe.org.cer<span class=p>;</span>
+</span></span><span class=line><span class=cl>	ssl_certificate_key          /root/.acme.sh/cmdb.caizhe.org/cmdb.caizhe.org.key<span class=p>;</span>
+</span></span><span class=line><span class=cl>	ssl_ciphers                  EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256::!MD5<span class=p>;</span>
+</span></span><span class=line><span class=cl>	ssl_protocols                TLSv1 TLSv1.1 TLSv1.2<span class=p>;</span>
+</span></span><span class=line><span class=cl>	ssl_prefer_server_ciphers    on<span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=c1>#ssl_session_cache            builtin:1000 shared:SSL:10m;</span>
+</span></span><span class=line><span class=cl>	<span class=c1>#ssl_session_timeout          1d;</span>
+</span></span><span class=line><span class=cl>	<span class=c1>#ssl_session_tickets          on;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    location / <span class=o>{</span>
+</span></span><span class=line><span class=cl>            root   html/cmdb<span class=p>;</span>
+</span></span><span class=line><span class=cl>            index  index.html index.htm<span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

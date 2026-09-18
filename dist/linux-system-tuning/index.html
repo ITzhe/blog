@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linux System Tuning</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Linux System Tuning</h1>
+      <div class="article-meta">
+        <time datetime="2016-03-02">Mar 02, 2016</time>
+        <span>2 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <h1 id=system-tuning>
+  System tuning
+</h1>
+<ol>
+  <li>
+    <p>
+      Trim startup services to the minimum.
+    </p>
+  </li>
+  <li>
+    <p>
+      Disable remote root login, change the SSH port, switch remote login to key-based authentication, and use a VPN internal connection if necessary.
+    </p>
+  </li>
+  <li>
+    <p>
+      Disable iptables and SELinux as the workload requires.
+    </p>
+  </li>
+  <li>
+    <p>
+      Switch to a faster domestic YUM mirror.
+    </p>
+  </li>
+  <li>
+    <p>
+      Set the file character set — UTF-8 is best.
+    </p>
+  </li>
+  <li>
+    <p>
+      Customize the login banner in
+      <code>/etc/issue</code>
+      .
+    </p>
+  </li>
+  <li>
+    <p>
+      Synchronize the time.
+    </p>
+  </li>
+  <li>
+    <p>
+      Set a connection timeout for terminals.
+    </p>
+  </li>
+  <li>
+    <p>
+      Avoid IP addresses — prefer hostnames.
+    </p>
+  </li>
+  <li>
+    <p>
+      File locking (use with caution).
+    </p>
+  </li>
+  <li>
+    <p>
+      Adjust the file descriptor limit:
+    </p>
+    <p>
+      vim /etc/security/limits.conf
+    </p>
+    <ul>
+      <li>
+        soft nofile 65535
+      </li>
+      <li>
+        hard nofile 65535
+      </li>
+    </ul>
+  </li>
+</ol>
+<h1 id=kernel-tuning>
+  Kernel tuning
+</h1>
+<p>
+  Enable kernel forwarding:
+</p>
+<pre><code>net.ipv4.ip_forward = 1
+</code></pre>
+<p>
+  Set the timewait limit (default 180000):
+</p>
+<pre><code>net.ipve.tcp_max_tw_buckets = 6000
+</code></pre>
+<p>
+  Sets the range of ports the system is allowed to open:
+</p>
+<pre><code>net.ipv4.ip_local_port_range = 1024 65000
+</code></pre>
+<p>
+  Enable fast TIME_WAIT recycling:
+</p>
+<pre><code>net.ipv4.tcp_tw_recycle = 1
+</code></pre>
+<p>
+  Enable reuse, allowing TIME-WAIT sockets to be reused for new TCP connections:
+</p>
+<pre><code>net.ipv4.tcp_tw_reuse = 1
+</code></pre>
+<p>
+  Enable SYN cookies, which handle the SYN queue when it overflows:
+</p>
+<pre><code>net.ipv4.tcp_syncookies = 1
+</code></pre>
+<p>
+  Tunes how many TCP connections the system initiates at once. Under high concurrency the default can cause connection timeouts or retransmissions, so this needs to be tuned against the expected concurrency. The default is 128:
+</p>
+<pre><code>net.core.somaxconn = 262144
+</code></pre>
+<p>
+  The maximum number of packets queued when each network interface receives packets faster than the kernel can process them:
+</p>
+<pre><code>net.core.netdev_max_backlog = 262144
+</code></pre>
+<p>
+  Sets how many TCP sockets may be left unattached to any user file handle. Beyond this number, orphaned connections are reset immediately and a warning is logged. This limit exists only to guard against simple DoS attacks — do not rely on it too heavily or reduce it deliberately; in most cases it should be increased:
+</p>
+<pre><code>net.ipv4.tcp_max_orphans = 262144
+</code></pre>
+<p>
+  The maximum number of connection requests that have not yet received an acknowledgement from the client. For a system with 128MB of memory the default is 1024; for small-memory systems it is 128:
+</p>
+<pre><code>net.ipv4.tcp_max_syn_backlog = 262144
+</code></pre>
+<p>
+  The number of SYN+ACK packets sent before the kernel gives up on a connection:
+</p>
+<pre><code>net.ipv4.tcp_synack_retries = 1
+</code></pre>
+<p>
+  The number of SYN packets sent before the kernel gives up establishing a connection:
+</p>
+<pre><code>net.ipv4.tcp_syn_retries = 1
+</code></pre>
+<p>
+  How long a socket stays in FIN-WAIT-2. The default is 60 seconds:
+</p>
+<pre><code>net.ipv4.tcp_fin_timeout = 1
+</code></pre>
+<p>
+  How often TCP sends keepalive messages on a long connection. The default is 2 hours:
+</p>
+<pre><code>net.ipv4.tcp_keepalive_time = 30
+</code></pre>
+<p>
+  Tunes the swap usage threshold as a percentage. (100-10) = 90 means swap is used once memory usage reaches 90%. For Redis servers, 0 is recommended:
+</p>
+<pre><code>/proc/sys/vm/swappiness 
+10
+</code></pre>
+<p>
+  This article is short and will be expanded over time — suggestions are welcome.
+</p>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

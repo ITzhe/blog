@@ -6,14 +6,17 @@
 
     python check.py
 
-它会检查：
-  1. 结构  每篇文章是否都有该有的骨架（标题、正文、样式引用）
+这是一个纯静态 HTML 网站：只有文章、首页、关于页。
+没有构建步骤，没有框架，没有 SEO 文件。
+
+检查内容：
+  1. 结构  每个页面是否都有该有的骨架
   2. 完整  正文是否被截断、标签是否闭合
   3. 链接  站内链接和页内锚点是否还有效
   4. 变化  和上次运行相比，哪些文章的正文被改动了
 
-第一次运行会建立快照（把当前状态记下来），之后每次运行都会和快照对比。
-快照存在 .snapshot.json，这个文件要一起提交到 git。
+第一次运行会建立快照（.snapshot.json），之后每次运行都与之对比。
+快照文件要一起提交到 git。
 
 退出码 0 = 一切正常，1 = 发现问题。
 """
@@ -32,14 +35,34 @@ REQUIRED_FILES = [
     "index.html",
     "404.html",
     "style.css",
-    "robots.txt",
-    "sitemap.xml",
-    "_headers",
-    "_redirects",
+    "favicon.ico",
     "about/index.html",
 ]
 
-# 自闭合标签，不需要配对
+# 不希望再出现的文件（已废弃的 SEO / 老站遗留）
+FORBIDDEN_FILES = [
+    "sitemap.xml",
+    "robots.txt",
+    "_redirects",
+    "_headers",
+    "feed.xml",
+]
+
+# 不希望再出现在 HTML 里的东西
+FORBIDDEN_PATTERNS = [
+    (r'<link rel="canonical"', "canonical 链接"),
+    (r'<meta property="og:', "og 标签"),
+    (r'<meta name="twitter:', "twitter 标签"),
+    (r'<meta name="description"', "description meta"),
+    (r'href="[^"]*tags/', "指向已删除标签页的链接"),
+]
+
+# 单独跟踪的待办项（不算错误，只提示）
+TODO_PATTERNS = [
+    (r'https://caizhe-img\.oss-cn-beijing\.aliyuncs\.com',
+     "阿里云 OSS 图片（计划迁往 Cloudflare R2）"),
+]
+
 VOID_TAGS = {
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
@@ -47,21 +70,15 @@ VOID_TAGS = {
 
 
 def strip_tags(s):
-    """得到可见文字，用于对比正文内容。"""
     s = re.sub(r"<[^>]+>", "", s)
     for a, b in (("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"),
                  ("&quot;", '"'), ("&#39;", "'"), ("&nbsp;", " "),
                  ("&#x27;", "'"), ("&middot;", "·")):
         s = s.replace(a, b)
-    return os_norm(s)
-
-
-def os_norm(s):
     return re.sub(r"\s+", "", s)
 
 
 def body_of(path):
-    """取出 <div class="article-body"> 里的内容。"""
     raw = path.read_text(encoding="utf-8")
     key = '<div class="article-body">'
     i = raw.find(key)
@@ -80,17 +97,7 @@ def body_of(path):
     return raw[start:pos - len("</div>")]
 
 
-def text_of(path):
-    """取出页面上所有可见文字（去掉脚本、样式、导航）。"""
-    raw = path.read_text(encoding="utf-8")
-    raw = re.sub(r"<script.*?</script>", "", raw, flags=re.S | re.I)
-    raw = re.sub(r"<style.*?</style>", "", raw, flags=re.S | re.I)
-    raw = re.sub(r"<head.*?</head>", "", raw, flags=re.S | re.I)
-    return strip_tags(raw)
-
-
 def check_tags(path):
-    """粗略检查标签配对，找出明显没闭合的地方。"""
     raw = path.read_text(encoding="utf-8")
     raw = re.sub(r"<!--.*?-->", "", raw, flags=re.S)
     raw = re.sub(r"<script.*?</script>", "", raw, flags=re.S | re.I)
@@ -103,7 +110,6 @@ def check_tags(path):
             if stack and stack[-1] == name:
                 stack.pop()
             elif name in stack:
-                # 有更晚开的没关，说明嵌套乱了
                 return f"标签嵌套错误：</{name}> 之前的标签没有关闭"
         else:
             stack.append(name)
@@ -112,11 +118,10 @@ def check_tags(path):
     return None
 
 
-def post_slugs():
-    pdir = DIST / "p"
-    if not pdir.is_dir():
-        return []
-    return sorted(d.name for d in pdir.iterdir() if d.is_dir())
+def post_dirs():
+    """文章目录：dist/ 下除了 about 之外的一级目录。"""
+    return sorted(d.name for d in DIST.iterdir()
+                  if d.is_dir() and d.name != "about")
 
 
 def load_snapshot():
@@ -143,7 +148,7 @@ def main():
     print("=" * 66)
 
     # ---------- 1. 固定文件 ----------
-    print("\n[1/5] 检查固定文件")
+    print("\n[1/6] 检查固定文件")
     for rel in REQUIRED_FILES:
         if (DIST / rel).exists():
             print(f"   ✓ {rel}")
@@ -151,18 +156,34 @@ def main():
             errors.append(f"缺少文件 {rel}")
             print(f"   ✗ 缺少 {rel}")
 
-    # ---------- 2. 文章结构 ----------
-    print("\n[2/5] 检查文章结构")
-    slugs = post_slugs()
+    print("\n[2/6] 检查是否残留老站文件")
+    found = False
+    for name in FORBIDDEN_FILES:
+        if (DIST / name).exists():
+            errors.append(f"不该存在的文件：{name}")
+            print(f"   ✗ 不该存在：{name}")
+            found = True
+    if (DIST / "tags").is_dir():
+        errors.append("不该存在的目录：tags/")
+        print("   ✗ 不该存在：tags/")
+        found = True
+    if not found:
+        print("   ✓ 没有残留")
+
+    # ---------- 3. 文章结构 ----------
+    print("\n[3/6] 检查文章结构")
+    slugs = post_dirs()
     if not slugs:
-        errors.append("dist/p/ 下没有任何文章")
-        print("   ✗ dist/p/ 下没有文章")
+        errors.append("dist/ 下没有任何文章目录")
+        print("   ✗ dist/ 下没有文章")
     bodies = {}
+    bad_count = 0
     for slug in slugs:
-        f = DIST / "p" / slug / "index.html"
+        f = DIST / slug / "index.html"
         if not f.exists():
             errors.append(f"{slug} 缺少 index.html")
             print(f"   ✗ {slug} 缺少 index.html")
+            bad_count += 1
             continue
         raw = f.read_text(encoding="utf-8")
         problems = []
@@ -187,10 +208,11 @@ def main():
         if problems:
             errors.append(f"{slug}: {'; '.join(problems)}")
             print(f"   ✗ {slug}: {'; '.join(problems)}")
-    print(f"   共 {len(slugs)} 篇，{len(slugs) - len([e for e in errors if e.startswith(tuple(slugs))])} 篇正常")
+            bad_count += 1
+    print(f"   共 {len(slugs)} 篇，{len(slugs) - bad_count} 篇正常")
 
-    # ---------- 3. 链接 ----------
-    print("\n[3/5] 检查链接")
+    # ---------- 4. 链接 ----------
+    print("\n[4/6] 检查链接")
     dead, anchors_bad, anchor_total = [], [], 0
     for f in DIST.rglob("*.html"):
         txt = f.read_text(encoding="utf-8")
@@ -225,8 +247,42 @@ def main():
     else:
         print(f"   ✓ {anchor_total} 个页内锚点全部有效")
 
-    # ---------- 4. 和快照对比 ----------
-    print("\n[4/5] 对比上次快照")
+    # ---------- 5. 不该出现的东西 ----------
+    print("\n[5/6] 检查不该出现的内容")
+    hits = {desc: [] for _, desc in FORBIDDEN_PATTERNS}
+    for f in DIST.rglob("*.html"):
+        txt = f.read_text(encoding="utf-8")
+        rel = f.relative_to(DIST)
+        for pat, desc in FORBIDDEN_PATTERNS:
+            if re.search(pat, txt):
+                hits[desc].append(str(rel))
+    found2 = False
+    for desc, files in hits.items():
+        if files:
+            found2 = True
+            errors.append(f"发现 {desc}：{', '.join(files[:3])}")
+            print(f"   ✗ {desc}（{len(files)} 个文件）")
+    if not found2:
+        print("   ✓ 干净")
+
+    # 待办项：不算错误
+    print("\n[待办]")
+    todo_found = False
+    for pat, desc in TODO_PATTERNS:
+        files = []
+        for f in DIST.rglob("*.html"):
+            if re.search(pat, f.read_text(encoding="utf-8")):
+                files.append(str(f.relative_to(DIST)))
+        if files:
+            todo_found = True
+            print(f"   · {desc}：{len(files)} 个文件")
+            for x in files[:3]:
+                print(f"       {x}")
+    if not todo_found:
+        print("   ✓ 无待办")
+
+    # ---------- 6. 和快照对比 ----------
+    print("\n[6/6] 对比上次快照")
     old = load_snapshot()
     new = {slug: hashlib.sha256(bodies[slug].encode()).hexdigest()[:16]
            for slug in sorted(bodies)}
@@ -246,8 +302,7 @@ def main():
             print(f"   ℹ 正文有改动 {len(changed)} 篇：")
             for s in changed:
                 n_old = old.get("sizes", {}).get(s, 0)
-                n_new = len(bodies[s])
-                delta = n_new - n_old
+                delta = len(bodies[s]) - n_old
                 sign = "+" if delta >= 0 else ""
                 print(f"      {s}  ({sign}{delta} 字)")
         if not (added or removed or changed):
@@ -259,15 +314,13 @@ def main():
         "total_chars": sum(len(b) for b in bodies.values()),
     })
 
-    # ---------- 5. 总览 ----------
-    print("\n[5/5] 总览")
+    # ---------- 总览 ----------
+    print("\n[总览]")
     total_chars = sum(len(b) for b in bodies.values())
     n_files = sum(1 for _ in DIST.rglob("*") if _.is_file())
     print(f"   文章 {len(slugs)} 篇，正文合计 {total_chars} 字")
     print(f"   站点文件 {n_files} 个")
-    print(f"   首页列出 {len(re.findall(r'<li><time', (DIST / 'index.html').read_text(encoding='utf-8')))} 篇")
 
-    # ---------- 结论 ----------
     print("\n" + "=" * 66)
     if errors:
         print(f"发现 {len(errors)} 个问题，需要修复：")
@@ -279,9 +332,8 @@ def main():
         print("   git checkout -- dist/")
         return 1
     print("一切正常 ✓")
-    if warns:
-        for w in warns:
-            print(f"提醒：{w}")
+    for w in warns:
+        print(f"提醒：{w}")
     return 0
 
 

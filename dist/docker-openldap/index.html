@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing OpenLDAP with Docker</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Installing OpenLDAP with Docker</h1>
+      <div class="article-meta">
+        <time datetime="2023-07-24">Jul 24, 2023</time>
+        <span>8 minute read</span>
+      </div>
+    </header>
+    <nav class="toc">
+      <div class="toc-title">Table of contents</div>
+      <ol><li><a href=#test-command>Test command</a></li><li><a href=#creating-a-group>Creating a group</a></li><li><a href=#creating-a-user>Creating a user</a></li></ol><ol><li><a href=#testing>Testing</a></li></ol><ol><li><a href=#expiry-reminders>Expiry reminders</a></li></ol>
+    </nav>
+    <div class="article-body">
+    <h1 id=environment>
+  Environment
+</h1>
+<div class=table-wrapper>
+  <table>
+    <thead>
+      <tr>
+        <th style=text-align:left>OS</th>
+        <th style=text-align:left>Docker</th>
+        <th style=text-align:left>LDAP</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style=text-align:left>Ubuntu 18</td>
+        <td style=text-align:left>20.10</td>
+        <td style=text-align:left>2.4.57</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<h1 id=installing-openldap>
+  Installing OpenLDAP
+</h1>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>docker run -d <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>-p 389:389 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--name openldap <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--restart<span class=o>=</span>always <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--env <span class=nv>LDAP_ORGANISATION</span><span class=o>=</span><span class=s2>&#34;caizhe&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--env <span class=nv>LDAP_DOMAIN</span><span class=o>=</span><span class=s2>&#34;caizhe.org&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--env <span class=nv>LDAP_ADMIN_PASSWORD</span><span class=o>=</span><span class=s2>&#34;111111&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>osixia/openldap
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<h1 id=installing-the-web-ui-phpldapadmin>
+  Installing the web UI (PHPLDAPadmin)
+</h1>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run -d <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--privileged <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>-p 80:80 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--name phpldapadmin <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--env <span class=nv>PHPLDAPADMIN_HTTPS</span><span class=o>=</span><span class=nb>false</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--env <span class=nv>PHPLDAPADMIN_LDAP_HOSTS</span><span class=o>=</span>192.168.1.100 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>osixia/phpldapadmin
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<h2 id=test-command>
+  Test command
+</h2>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>ldapsearch -x -H ldap:/// -D <span class=s2>&#34;cn=admin,dc=caizhe,dc=org&#34;</span> -w <span class=m>111111</span> -b <span class=s2>&#34;dc=caizhe,dc=org&#34;</span> -LLL
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Or run it inside the container:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>ldapsearch -x -H ldap:/// -D <span class=s2>&#34;cn=admin,dc=caizhe,dc=org&#34;</span> -w <span class=m>111111</span> -b <span class=s2>&#34;dc=caizhe,dc=org&#34;</span> -LLL
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<h2 id=creating-a-group>
+  Creating a group
+</h2>
+<p>
+  Before adding users in LDAP you need a group.
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%871.png loading=lazy alt=image.png>
+</p>
+<p>
+  Choose
+  <code>default</code>
+  .
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%872.png loading=lazy alt=image.png>
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%873.png loading=lazy alt=image.png>
+</p>
+<p>
+  You can pick any organizational unit here — you will change it later anyway.
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%874.png loading=lazy alt=image.png>
+</p>
+<p>
+  Submit once you have confirmed everything is correct and the group is created.
+</p>
+<h2 id=creating-a-user>
+  Creating a user
+</h2>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%875.png loading=lazy alt=image.png>
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%876.png loading=lazy alt=image.png>
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%877.png loading=lazy>
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%878.png loading=lazy>
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%879.png loading=lazy>
+</p>
+<p>
+  LDAP groups and users are not linked by default, so we need to add the user we just created to the
+  <code>dba-group</code>
+  group.
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%8710.png loading=lazy alt=image.png>
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%8711.png loading=lazy>
+</p>
+<p>
+  The end result looks like this — just submit with &ldquo;Update~&rdquo;.
+</p>
+<p>
+  The user is now a member of the group. Notice the
+  <code>memberOf</code>
+  attribute: that is exactly what our Jenkins group authorization reads to decide access. (I really want to ask the author why it cannot read the DN and make the decision from the OU.)
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/%E5%9B%BE%E7%89%8712.png loading=lazy alt=image.png>
+</p>
+<h1 id=password-policy>
+  Password policy
+</h1>
+<p>
+  Password policy is normally handled with
+  <code>ppolicy</code>
+  . You can check whether the module is loaded with:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@openldap-host:/etc/ldap# slapcat -n <span class=m>0</span> <span class=p>|</span> grep -i module
+</span></span><span class=line><span class=cl>dn: <span class=nv>cn</span><span class=o>=</span>module<span class=o>{</span>0<span class=o>}</span>,cn<span class=o>=</span>config
+</span></span><span class=line><span class=cl>objectClass: olcModuleList
+</span></span><span class=line><span class=cl>cn: module<span class=o>{</span>0<span class=o>}</span>
+</span></span><span class=line><span class=cl>olcModulePath: /usr/lib/ldap
+</span></span><span class=line><span class=cl>olcModuleLoad: <span class=o>{</span>0<span class=o>}</span>back_mdb
+</span></span><span class=line><span class=cl>olcModuleLoad: <span class=o>{</span>1<span class=o>}</span>memberof
+</span></span><span class=line><span class=cl>olcModuleLoad: <span class=o>{</span>2<span class=o>}</span>refint
+</span></span><span class=line><span class=cl>structuralObjectClass: olcModuleList
+</span></span><span class=line><span class=cl>olcAttributeTypes: <span class=o>{</span>15<span class=o>}(</span> 1.3.6.1.4.1.4754.1.99.1 NAME <span class=s1>&#39;pwdCheckModule&#39;</span> DESC
+</span></span><span class=line><span class=cl> <span class=s1>&#39;Loadable module that instantiates &#34;check_password() function&#39;</span> EQUALITY cas
+</span></span><span class=line><span class=cl> op AUXILIARY MAY pwdCheckModule <span class=o>)</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  If it is not there, load the module explicitly with
+  <code>ldapadd</code>
+  . Create an LDIF file:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cat load-ppolicy-mod.ldif
+</span></span><span class=line><span class=cl>dn: <span class=nv>cn</span><span class=o>=</span>module<span class=o>{</span>0<span class=o>}</span>,cn<span class=o>=</span>config
+</span></span><span class=line><span class=cl>changetype: modify
+</span></span><span class=line><span class=cl>add: olcModuleLoad
+</span></span><span class=line><span class=cl>olcModuleLoad: ppolicy.la
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Load it:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>ldapadd -Y EXTERNAL -H ldapi:/// -f load-ppolicy-mod.ldif
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Verify it loaded:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@openldap-host:/etc/ldap# slapcat -n <span class=m>0</span> <span class=p>|</span> grep -i module
+</span></span><span class=line><span class=cl>dn: <span class=nv>cn</span><span class=o>=</span>module<span class=o>{</span>0<span class=o>}</span>,cn<span class=o>=</span>config
+</span></span><span class=line><span class=cl>objectClass: olcModuleList
+</span></span><span class=line><span class=cl>cn: module<span class=o>{</span>0<span class=o>}</span>
+</span></span><span class=line><span class=cl>olcModulePath: /usr/lib/ldap
+</span></span><span class=line><span class=cl>olcModuleLoad: <span class=o>{</span>0<span class=o>}</span>back_mdb
+</span></span><span class=line><span class=cl>olcModuleLoad: <span class=o>{</span>1<span class=o>}</span>memberof
+</span></span><span class=line><span class=cl>olcModuleLoad: <span class=o>{</span>2<span class=o>}</span>refint
+</span></span><span class=line><span class=cl>olcModuleLoad: <span class=o>{</span>3<span class=o>}</span>ppolicy.la
+</span></span><span class=line><span class=cl>structuralObjectClass: olcModuleList
+</span></span><span class=line><span class=cl>olcAttributeTypes: <span class=o>{</span>15<span class=o>}(</span> 1.3.6.1.4.1.4754.1.99.1 NAME <span class=s1>&#39;pwdCheckModule&#39;</span> DESC
+</span></span><span class=line><span class=cl> <span class=s1>&#39;Loadable module that instantiates &#34;check_password() function&#39;</span> EQUALITY cas
+</span></span><span class=line><span class=cl> op AUXILIARY MAY pwdCheckModule <span class=o>)</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Check the storage backend used by the existing LDAP policy database — you will find they are all
+  <code>mdb</code>
+  :
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@openldap-host:/etc/ldap# ldapsearch -LLL -Y EXTERNAL -H ldapi:/// -b  <span class=nv>cn</span><span class=o>=</span>config olcDatabase <span class=p>|</span> grep mdb
+</span></span><span class=line><span class=cl>SASL/EXTERNAL authentication started
+</span></span><span class=line><span class=cl>SASL username: <span class=nv>gidNumber</span><span class=o>=</span>0+uidNumber<span class=o>=</span>0,cn<span class=o>=</span>peercred,cn<span class=o>=</span>external,cn<span class=o>=</span>auth
+</span></span><span class=line><span class=cl>SASL SSF: <span class=m>0</span>
+</span></span><span class=line><span class=cl>dn: <span class=nv>olcDatabase</span><span class=o>={</span>1<span class=o>}</span>mdb,cn<span class=o>=</span>config
+</span></span><span class=line><span class=cl>olcDatabase: <span class=o>{</span>1<span class=o>}</span>mdb
+</span></span><span class=line><span class=cl>dn: <span class=nv>olcOverlay</span><span class=o>={</span>0<span class=o>}</span>memberof,olcDatabase<span class=o>={</span>1<span class=o>}</span>mdb,cn<span class=o>=</span>config
+</span></span><span class=line><span class=cl>dn: <span class=nv>olcOverlay</span><span class=o>={</span>1<span class=o>}</span>refint,olcDatabase<span class=o>={</span>1<span class=o>}</span>mdb,cn<span class=o>=</span>config
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Create the DN for the default password policy:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@openldap-host:/etc/ldap# cat pwpolicyoverlay.ldif
+</span></span><span class=line><span class=cl>dn: <span class=nv>olcOverlay</span><span class=o>=</span>ppolicy,olcDatabase<span class=o>={</span>1<span class=o>}</span>mdb,cn<span class=o>=</span>config
+</span></span><span class=line><span class=cl>objectClass: olcOverlayConfig
+</span></span><span class=line><span class=cl>objectClass: olcPPolicyConfig
+</span></span><span class=line><span class=cl>olcOverlay: ppolicy
+</span></span><span class=line><span class=cl>olcPPolicyDefault: <span class=nv>cn</span><span class=o>=</span>default,dc<span class=o>=</span>caizhe,dc<span class=o>=</span>org
+</span></span><span class=line><span class=cl>olcPPolicyHashCleartext: TRUE
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Update the database:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@498d5b127557:/# ldapadd -Y EXTERNAL -H ldapi:/// -f pwpolicyoverlay.ldif
+</span></span><span class=line><span class=cl>SASL/EXTERNAL authentication started
+</span></span><span class=line><span class=cl>SASL username: <span class=nv>gidNumber</span><span class=o>=</span>0+uidNumber<span class=o>=</span>0,cn<span class=o>=</span>peercred,cn<span class=o>=</span>external,cn<span class=o>=</span>auth
+</span></span><span class=line><span class=cl>SASL SSF: <span class=m>0</span>
+</span></span><span class=line><span class=cl>adding new entry <span class=s2>&#34;olcOverlay=ppolicy,olcDatabase={1}mdb,cn=config&#34;</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Add the default policy rules.
+</p>
+<p>
+  (For testing purposes the password expiry here is set to 100 seconds, with a warning 60 seconds before expiry.)
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cat ldap-pwpolicies.ldif
+</span></span><span class=line><span class=cl>dn: <span class=nv>cn</span><span class=o>=</span>default,dc<span class=o>=</span>caizhe,dc<span class=o>=</span>org
+</span></span><span class=line><span class=cl>objectClass: inetOrgPerson
+</span></span><span class=line><span class=cl>objectClass: pwdPolicyChecker
+</span></span><span class=line><span class=cl>objectClass: pwdPolicy
+</span></span><span class=line><span class=cl>cn: pwpolicy
+</span></span><span class=line><span class=cl>sn: pwpolicy
+</span></span><span class=line><span class=cl>pwdAttribute: userPassword
+</span></span><span class=line><span class=cl>pwdMinAge: <span class=m>0</span>
+</span></span><span class=line><span class=cl>pwdMaxAge: <span class=m>100</span>
+</span></span><span class=line><span class=cl>pwdInHistory: <span class=m>5</span>
+</span></span><span class=line><span class=cl>pwdCheckQuality: <span class=m>2</span>
+</span></span><span class=line><span class=cl>pwdMinLength: <span class=m>8</span>
+</span></span><span class=line><span class=cl>pwdExpireWarning: <span class=m>60</span>
+</span></span><span class=line><span class=cl>pwdGraceAuthNLimit: <span class=m>3</span>
+</span></span><span class=line><span class=cl>pwdLockout: TRUE
+</span></span><span class=line><span class=cl>pwdLockoutDuration: <span class=m>0</span>
+</span></span><span class=line><span class=cl>pwdMaxFailure: <span class=m>0</span>
+</span></span><span class=line><span class=cl>pwdFailureCountInterval: <span class=m>0</span>
+</span></span><span class=line><span class=cl>pwdReset: TRUE
+</span></span><span class=line><span class=cl>pwdMustChange: TRUE
+</span></span><span class=line><span class=cl>pwdAllowUserChange: TRUE
+</span></span><span class=line><span class=cl>pwdSafeModify: FALSE
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Update the password policy on slapd (creating a default policy named
+  <code>default</code>
+  ):
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>ldapadd -Y EXTERNAL -H ldapi:/// -f ldap-pwpolicies.ldif
+</span></span><span class=line><span class=cl>SASL/EXTERNAL authentication started
+</span></span><span class=line><span class=cl>SASL username: <span class=nv>gidNumber</span><span class=o>=</span>0+uidNumber<span class=o>=</span>0,cn<span class=o>=</span>peercred,cn<span class=o>=</span>external,cn<span class=o>=</span>auth
+</span></span><span class=line><span class=cl>SASL SSF: <span class=m>0</span>
+</span></span><span class=line><span class=cl>adding new entry <span class=s2>&#34;cn=default,dc=caizhe,dc=org&#34;</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<h2 id=testing>
+  Testing
+</h2>
+<p>
+  Change a password to something that does not meet the requirements:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@openldap-host:/etc/ldap# ldappasswd -H ldapi:/// -Y EXTERNAL -S <span class=s2>&#34;cn=ccc,cn=default,ou=pwpolicy,dc=caizhe,dc=org&#34;</span>
+</span></span><span class=line><span class=cl>New password:
+</span></span><span class=line><span class=cl>Re-enter new password:
+</span></span><span class=line><span class=cl>SASL/EXTERNAL authentication started
+</span></span><span class=line><span class=cl>SASL username: <span class=nv>gidNumber</span><span class=o>=</span>0+uidNumber<span class=o>=</span>0,cn<span class=o>=</span>peercred,cn<span class=o>=</span>external,cn<span class=o>=</span>auth
+</span></span><span class=line><span class=cl>SASL SSF: <span class=m>0</span>
+</span></span><span class=line><span class=cl>Result: Constraint violation <span class=o>(</span>19<span class=o>)</span>
+</span></span><span class=line><span class=cl>Additional info: Password fails quality checking policy
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Log in as a new user and check the password expiry:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>fd</span><span class=o>=</span><span class=m>14</span> ACCEPT from <span class=nv>IP</span><span class=o>=</span>192.168.0.131:50662 <span class=o>(</span><span class=nv>IP</span><span class=o>=</span>0.0.0.0:389<span class=o>)</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>0</span> BIND <span class=nv>dn</span><span class=o>=</span><span class=s2>&#34;cn=aaa,dc=caizhe,dc=org&#34;</span> <span class=nv>method</span><span class=o>=</span><span class=m>128</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>0</span> BIND <span class=nv>dn</span><span class=o>=</span><span class=s2>&#34;cn=aaa,dc=caizhe,dc=org&#34;</span> <span class=nv>mech</span><span class=o>=</span>SIMPLE <span class=nv>ssf</span><span class=o>=</span><span class=m>0</span>
+</span></span><span class=line><span class=cl>64c1e4ea ppolicy_bind: Setting warning <span class=k>for</span> password expiry <span class=k>for</span> <span class=nv>cn</span><span class=o>=</span>aaa,dc<span class=o>=</span>caizhe,dc<span class=o>=</span><span class=nv>org</span> <span class=o>=</span> <span class=m>21</span> seconds				 <span class=c1># 21 seconds until expiry</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>0</span> RESULT <span class=nv>tag</span><span class=o>=</span><span class=m>97</span> <span class=nv>err</span><span class=o>=</span><span class=m>0</span> <span class=nv>text</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>1</span> SRCH <span class=nv>base</span><span class=o>=</span><span class=s2>&#34;&#34;</span> <span class=nv>scope</span><span class=o>=</span><span class=m>0</span> <span class=nv>deref</span><span class=o>=</span><span class=m>3</span> <span class=nv>filter</span><span class=o>=</span><span class=s2>&#34;(objectClass=)&#34;</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>1</span> SRCH <span class=nv>attr</span><span class=o>=</span>subschemaSubentry
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>1</span> SEARCH RESULT <span class=nv>tag</span><span class=o>=</span><span class=m>101</span> <span class=nv>err</span><span class=o>=</span><span class=m>0</span> <span class=nv>nentries</span><span class=o>=</span><span class=m>1</span> <span class=nv>text</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>2</span> SRCH <span class=nv>base</span><span class=o>=</span><span class=s2>&#34;cn=Subschema&#34;</span> <span class=nv>scope</span><span class=o>=</span><span class=m>0</span> <span class=nv>deref</span><span class=o>=</span><span class=m>3</span> <span class=nv>filter</span><span class=o>=</span><span class=s2>&#34;(objectClass=subschema)&#34;</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>2</span> SRCH <span class=nv>attr</span><span class=o>=</span>createTimestamp modifyTimestamp
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>2</span> SEARCH RESULT <span class=nv>tag</span><span class=o>=</span><span class=m>101</span> <span class=nv>err</span><span class=o>=</span><span class=m>0</span> <span class=nv>nentries</span><span class=o>=</span><span class=m>1</span> <span class=nv>text</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>3</span> SRCH <span class=nv>base</span><span class=o>=</span><span class=s2>&#34;&#34;</span> <span class=nv>scope</span><span class=o>=</span><span class=m>0</span> <span class=nv>deref</span><span class=o>=</span><span class=m>0</span> <span class=nv>filter</span><span class=o>=</span><span class=s2>&#34;(objectClass=)&#34;</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>3</span> SRCH <span class=nv>attr</span><span class=o>=</span>namingContexts subschemaSubentry supportedLDAPVersion supportedSASLMechanisms supportedExtension supportedControl supportedFeatures vendorName vendorVersion + objectClass
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>3</span> SEARCH RESULT <span class=nv>tag</span><span class=o>=</span><span class=m>101</span> <span class=nv>err</span><span class=o>=</span><span class=m>0</span> <span class=nv>nentries</span><span class=o>=</span><span class=m>1</span> <span class=nv>text</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>4</span> SRCH <span class=nv>base</span><span class=o>=</span><span class=s2>&#34;&#34;</span> <span class=nv>scope</span><span class=o>=</span><span class=m>0</span> <span class=nv>deref</span><span class=o>=</span><span class=m>0</span> <span class=nv>filter</span><span class=o>=</span><span class=s2>&#34;(objectClass=)&#34;</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>4</span> SRCH <span class=nv>attr</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>4</span> SEARCH RESULT <span class=nv>tag</span><span class=o>=</span><span class=m>101</span> <span class=nv>err</span><span class=o>=</span><span class=m>0</span> <span class=nv>nentries</span><span class=o>=</span><span class=m>1</span> <span class=nv>text</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>5</span> SRCH <span class=nv>base</span><span class=o>=</span><span class=s2>&#34;cn=Subschema&#34;</span> <span class=nv>scope</span><span class=o>=</span><span class=m>0</span> <span class=nv>deref</span><span class=o>=</span><span class=m>3</span> <span class=nv>filter</span><span class=o>=</span><span class=s2>&#34;(objectClass=)&#34;</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>5</span> SRCH <span class=nv>attr</span><span class=o>=</span>hasSubordinates objectClass
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>5</span> SEARCH RESULT <span class=nv>tag</span><span class=o>=</span><span class=m>101</span> <span class=nv>err</span><span class=o>=</span><span class=m>0</span> <span class=nv>nentries</span><span class=o>=</span><span class=m>1</span> <span class=nv>text</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>6</span> SRCH <span class=nv>base</span><span class=o>=</span><span class=s2>&#34;dc=caizhe,dc=org&#34;</span> <span class=nv>scope</span><span class=o>=</span><span class=m>0</span> <span class=nv>deref</span><span class=o>=</span><span class=m>3</span> <span class=nv>filter</span><span class=o>=</span><span class=s2>&#34;(objectClass=)&#34;</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>6</span> SRCH <span class=nv>attr</span><span class=o>=</span>hasSubordinates objectClass
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>6</span> SEARCH RESULT <span class=nv>tag</span><span class=o>=</span><span class=m>101</span> <span class=nv>err</span><span class=o>=</span><span class=m>32</span> <span class=nv>nentries</span><span class=o>=</span><span class=m>0</span> <span class=nv>text</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>7</span> SRCH <span class=nv>base</span><span class=o>=</span><span class=s2>&#34;cn=config&#34;</span> <span class=nv>scope</span><span class=o>=</span><span class=m>0</span> <span class=nv>deref</span><span class=o>=</span><span class=m>3</span> <span class=nv>filter</span><span class=o>=</span><span class=s2>&#34;(objectClass=*)&#34;</span>
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>7</span> SRCH <span class=nv>attr</span><span class=o>=</span>hasSubordinates objectClass
+</span></span><span class=line><span class=cl>64c1e4ea <span class=nv>conn</span><span class=o>=</span><span class=m>1068</span> <span class=nv>op</span><span class=o>=</span><span class=m>7</span> SEARCH RESULT <span class=nv>tag</span><span class=o>=</span><span class=m>101</span> <span class=nv>err</span><span class=o>=</span><span class=m>32</span> <span class=nv>nentries</span><span class=o>=</span><span class=m>0</span> <span class=nv>text</span><span class=o>=</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Note: existing accounts are not affected — only users added afterwards are subject to the password policy.
+</p>
+<hr>
+<h1 id=self-service-password-platform>
+  Self-service password platform
+</h1>
+<p>
+  Create a configuration file:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-php data-lang=php><span class=line><span class=cl><span class=o>&lt;?</span><span class=nx>php</span> <span class=c1>// My SSP configuration
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$keyphrase</span> <span class=o>=</span> <span class=s2>&#34;mysecret&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$debug</span> <span class=o>=</span> <span class=k>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$use_captcha</span> <span class=o>=</span> <span class=k>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$ldap_url</span> <span class=o>=</span> <span class=s2>&#34;ldap://192.168.1.250:389&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$ldap_binddn</span> <span class=o>=</span> <span class=s2>&#34;CN=admin,DC=innovsharing,DC=com&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$ldap_bindpw</span> <span class=o>=</span> <span class=s2>&#34;111111&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$ldap_base</span> <span class=o>=</span> <span class=s2>&#34;dc=innovsharing,dc=com&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$ldap_filter</span> <span class=o>=</span> <span class=s2>&#34;(&amp;(objectClass=inetOrgPerson)(cn={login}))&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$use_sms</span> <span class=o>=</span> <span class=k>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$use_questions</span> <span class=o>=</span> <span class=k>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>$who_change_password</span> <span class=o>=</span> <span class=s2>&#34;user&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$show_extended_error</span> <span class=o>=</span> <span class=k>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$pwd_show_policy_pos</span> <span class=o>=</span> <span class=s2>&#34;above&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$pwd_show_policy</span> <span class=o>=</span> <span class=s2>&#34;always&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1>#$pwd_no_reuse = true;
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=c1>#$ldap_use_exop_passwd = true;
+</span></span></span><span class=line><span class=cl><span class=c1>#$ldap_use_ppolicy_control = true;
+</span></span></span><span class=line><span class=cl><span class=c1>#$pwd_min_lower = 1;
+</span></span></span><span class=line><span class=cl><span class=c1>#$pwd_min_upper = 1;
+</span></span></span><span class=line><span class=cl><span class=c1>#$pwd_min_digit = 1;
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$pwd_min_length</span> <span class=o>=</span> <span class=mi>8</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1>#$pwd_max_length = 16;
+</span></span></span><span class=line><span class=cl><span class=c1>#$hash = &#34;MD5&#34;;
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>## Token
+</span></span></span><span class=line><span class=cl><span class=c1># Use tokens?
+</span></span></span><span class=line><span class=cl><span class=c1># true (default)
+</span></span></span><span class=line><span class=cl><span class=c1># false
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$use_tokens</span> <span class=o>=</span> <span class=k>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1># Crypt tokens?
+</span></span></span><span class=line><span class=cl><span class=c1># true (default)
+</span></span></span><span class=line><span class=cl><span class=c1># false
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$crypt_tokens</span> <span class=o>=</span> <span class=k>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1># Token lifetime in seconds
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$token_lifetime</span> <span class=o>=</span> <span class=s2>&#34;3600&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>## Mail
+</span></span></span><span class=line><span class=cl><span class=c1># LDAP mail attribute
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$mail_attributes</span> <span class=o>=</span> <span class=k>array</span><span class=p>(</span> <span class=s2>&#34;mail&#34;</span><span class=p>,</span> <span class=s2>&#34;gosaMailAlternateAddress&#34;</span><span class=p>,</span> <span class=s2>&#34;proxyAddresses&#34;</span> <span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=c1># Get mail address directly from LDAP (only first mail entry)
+</span></span></span><span class=line><span class=cl><span class=c1># and hide mail input field
+</span></span></span><span class=line><span class=cl><span class=c1># default = false
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$mail_address_use_ldap</span> <span class=o>=</span> <span class=k>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1># Who the email should come from
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$mail_from</span> <span class=o>=</span> <span class=s2>&#34;xxx@innovsharing.com&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_from_name</span> <span class=o>=</span> <span class=s2>&#34;Self Service Password&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_signature</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1># Notify users anytime their password is changed
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$notify_on_change</span> <span class=o>=</span> <span class=k>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1># PHPMailer configuration (see https://github.com/PHPMailer/PHPMailer)
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nv>$mail_sendmailpath</span> <span class=o>=</span> <span class=s1>&#39;/usr/sbin/sendmail&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_protocol</span> <span class=o>=</span> <span class=s1>&#39;smtp&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_debug</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_debug_format</span> <span class=o>=</span> <span class=s1>&#39;error_log&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_host</span> <span class=o>=</span> <span class=s1>&#39;smtp.exmail.qq.com&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_auth</span> <span class=o>=</span> <span class=k>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_user</span> <span class=o>=</span> <span class=s1>&#39;xxxxx@innovsharing.com&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_pass</span> <span class=o>=</span> <span class=s1>&#39;xxxxxxxxxxxxx&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_port</span> <span class=o>=</span> <span class=mi>465</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_timeout</span> <span class=o>=</span> <span class=mi>30</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_keepalive</span> <span class=o>=</span> <span class=k>false</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_secure</span> <span class=o>=</span> <span class=s1>&#39;ssl&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_autotls</span> <span class=o>=</span> <span class=k>true</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_smtp_options</span> <span class=o>=</span> <span class=k>array</span><span class=p>();</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_contenttype</span> <span class=o>=</span> <span class=s1>&#39;text/plain&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_wordwrap</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_charset</span> <span class=o>=</span> <span class=s1>&#39;utf-8&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=nv>$mail_priority</span> <span class=o>=</span> <span class=mi>3</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=cp>?&gt;</span><span class=err>
+</span></span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Run the new container:
+</p>
+<pre><code>docker run -p 9080:80  --restart=always --name selfServicePassword -v $PWD/config.inc.php:/var/www/conf/config.inc.local.php -itd docker.io/ltbproject/self-service-password:1.5
+</code></pre>
+<p>
+  From there you can change passwords directly (and reset a forgotten password by email).
+</p>
+<p>
+  <img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/0230802163132.png loading=lazy>
+</p>
+<img src=https://caizhe-img.oss-cn-beijing.aliyuncs.com/blog/ldap/20230728190552.png style=zoom:50%>
+<h2 id=expiry-reminders>
+  Expiry reminders
+</h2>
+<p>
+  SSP makes changing passwords easy, but it has two drawbacks:
+</p>
+<ol>
+  <li>
+    There is no reminder before the password expires;
+  </li>
+  <li>
+    You cannot change a password that has already expired (AD supports this, but OpenLDAP keeps reporting a bad password).
+  </li>
+</ol>
+<p>
+  Here is a script that covers both:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nv>LDAP_HOSTURI</span><span class=o>=</span><span class=s2>&#34;ldap://192.168.1.250:389&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_ROOTDN</span><span class=o>=</span><span class=s2>&#34;cn=admin,dc=innovsharing,dc=com&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_ROOTPW</span><span class=o>=</span><span class=s2>&#34;111111&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_SEARCHBASEDN</span><span class=o>=</span><span class=s2>&#34;dc=innovsharing,dc=com&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_SEARCHFILTER</span><span class=o>=</span><span class=s2>&#34;(&amp;(cn=*)(objectClass=inetOrgPerson))&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_SEARCHCOMM</span><span class=o>=</span><span class=s2>&#34;ldapsearch -x -H </span><span class=si>${</span><span class=nv>LDAP_HOSTURI</span><span class=si>}</span><span class=s2> -D </span><span class=si>${</span><span class=nv>LDAP_ROOTDN</span><span class=si>}</span><span class=s2> -LLL -w </span><span class=si>${</span><span class=nv>LDAP_ROOTPW</span><span class=si>}</span><span class=s2> </span><span class=si>${</span><span class=nv>LDAP_SEARCHFILTER</span><span class=si>}</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>EXPIRE_DAY</span><span class=o>=</span>165		<span class=c1># LDAP expires passwords after 180 days; remind on day 165, 15 days early</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=si>${</span><span class=nv>LDAP_SEARCHCOMM</span><span class=si>}</span> -b <span class=si>${</span><span class=nv>LDAP_SEARCHBASEDN</span><span class=si>}</span> dn<span class=p>|</span>awk <span class=s1>&#39;{print $2}&#39;</span> &gt; /tmp/1.log
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>for</span> i in <span class=sb>`</span>cat /tmp/1.log<span class=sb>`</span>
+</span></span><span class=line><span class=cl><span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=nb>echo</span> <span class=nv>$i</span>
+</span></span><span class=line><span class=cl>        <span class=nv>ModifyTime</span><span class=o>=</span><span class=sb>`</span><span class=si>${</span><span class=nv>LDAP_SEARCHCOMM</span><span class=si>}</span> -b <span class=nv>$i</span> +<span class=p>|</span>grep modifyTimestamp<span class=p>|</span>awk <span class=s1>&#39;{print $NF}&#39;</span><span class=p>|</span>cut -c1-8<span class=sb>`</span>
+</span></span><span class=line><span class=cl>        <span class=nv>ModifyTime</span><span class=o>=</span><span class=k>$(</span>date -d <span class=s2>&#34;</span><span class=si>${</span><span class=nv>ModifyTime</span><span class=si>}</span><span class=s2>&#34;</span> +%s<span class=k>)</span>
+</span></span><span class=line><span class=cl>        <span class=nb>echo</span> <span class=si>${</span><span class=nv>ModifyTime</span><span class=si>}</span>
+</span></span><span class=line><span class=cl>        <span class=nv>NowTime</span><span class=o>=</span><span class=k>$(</span>date +%s<span class=k>)</span>
+</span></span><span class=line><span class=cl>        <span class=nv>diff</span><span class=o>=</span><span class=k>$((</span> <span class=o>(</span>NowTime <span class=o>-</span> ModifyTime<span class=o>)</span> <span class=o>/</span> <span class=m>86400</span> <span class=k>))</span>
+</span></span><span class=line><span class=cl>        <span class=nb>echo</span> <span class=si>${</span><span class=nv>diff</span><span class=si>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>((</span> <span class=si>${</span><span class=nv>diff</span><span class=si>}</span> &gt; <span class=si>${</span><span class=nv>EXPIRE_DAY</span><span class=p> ))
+</span></span></span><span class=line><span class=cl><span class=p>        then
+</span></span></span><span class=line><span class=cl><span class=p>           echo </span><span class=s2>&#34;exipire&#34;</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p>           Mail=</span><span class=sb>`</span><span class=si>${</span><span class=nv>LDAP_SEARCHCOMM</span><span class=si>}</span> -b <span class=nv>$i</span> mail <span class=p>|</span>grep mail<span class=p>|</span>awk <span class=s1>&#39;{print $2}&#39;</span><span class=sb>`</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p>           echo </span><span class=s2>&#34;Hi,Please change your password. It will expire.&#34;</span><span class=p> | mail -s </span><span class=s2>&#34;Accont expire warning&#34;</span><span class=p> </span><span class=si>${</span><span class=nv>mail</span><span class=si>}</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p>        else
+</span></span></span><span class=line><span class=cl><span class=p>           echo </span><span class=s2>&#34;no exipire&#34;</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p>        fi
+</span></span></span><span class=line><span class=cl><span class=p>done
+</span></span></span><span class=line><span class=cl><span class=p>rm -f /tmp/1.log
+</span></span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Put it in cron and run it once a day.
+</p>
+<p>
+  A few basic tools are required (
+  <code>mail</code>
+  ,
+  <code>gawk</code>
+  ,
+  <code>ssmtp</code>
+  ):
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>apt install mailutils gawk ssmtp
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Fill in the mail configuration:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>vim /etc/ssmtp/ssmtp.conf
+</span></span><span class=line><span class=cl><span class=nv>root</span><span class=o>=</span>xxx@innovsharing.com
+</span></span><span class=line><span class=cl><span class=nv>mailhub</span><span class=o>=</span>smtp.exmail.qq.com:465
+</span></span><span class=line><span class=cl><span class=nv>AuthUser</span><span class=o>=</span>xxx@innovsharing.com
+</span></span><span class=line><span class=cl><span class=nv>AuthPass</span><span class=o>=</span>xxxxxxx
+</span></span><span class=line><span class=cl><span class=nv>UseTLS</span><span class=o>=</span>Yes
+</span></span><span class=line><span class=cl>-------------------------
+</span></span><span class=line><span class=cl>vim /etc/ssmtp/revaliases
+</span></span><span class=line><span class=cl>root:xxx@innovsharing.com:smtp.exmail.qq.com:465
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Send a test mail to confirm:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl> <span class=nb>echo</span> <span class=s2>&#34;nei rong&#34;</span> <span class=p>|</span> mail -s <span class=s2>&#34;zhu ti&#34;</span> xxxxxxx@qq.com
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<hr>
+<p>
+  References:
+</p>
+<p>
+  <a class=link href=https://www.openldap.org/devel/admin/overlays.html target=_blank rel=noopener>https://www.openldap.org/devel/admin/overlays.html</a>
+</p>
+<p>
+  <a class=link href=https://tutoriels.meddeb.net/openldap-password-policy-managing-users-accounts/ target=_blank rel=noopener>https://tutoriels.meddeb.net/openldap-password-policy-managing-users-accounts/</a>
+</p>
+<p>
+  <a class=link href=https://kifarunix.com/implement-openldap-password-policies/ target=_blank rel=noopener>https://kifarunix.com/implement-openldap-password-policies/</a>
+</p>
+<p>
+  <a class=link href=https://tylersguides.com/guides/openldap-password-policy-overlay/ target=_blank rel=noopener>https://tylersguides.com/guides/openldap-password-policy-overlay/</a>
+</p>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>
