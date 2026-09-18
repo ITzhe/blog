@@ -9,6 +9,7 @@
     "docker-keepalived": "8a2fd8901fe23405",
     "docker-openldap": "7926ac97ca0615f0",
     "docker-redis-cluster": "89fec2dc81da8e07",
+    "ecr-image-pull-secret": "4cbf9bbd8dc22c34",
     "gitlab-purge-large-files": "8285ff2d308091e0",
     "glusterfs-distributed-storage": "d97e97e481111b40",
     "kubernetes-1-22-ha-install": "ac8e541382f0da3a",
@@ -19,7 +20,9 @@
     "lvs-keepalived": "3773a03d98e36072",
     "nginx-trailing-slash": "e95b8c3c3d9f2261",
     "nginx-tuning": "bd3fbe4706f06a24",
-    "redis-tuning": "2c9b84feb12e290b"
+    "redis-tuning": "2c9b84feb12e290b",
+    "rke2-ha-install": "2f3cd4f9505e23c9",
+    "vault-dynamic-db-creds": "9ed4e67c421bd142"
   },
   "sizes": {
     "301-vs-302-redirect": 1147,
@@ -31,6 +34,7 @@
     "docker-keepalived": 972,
     "docker-openldap": 11170,
     "docker-redis-cluster": 5238,
+    "ecr-image-pull-secret": 6982,
     "gitlab-purge-large-files": 1077,
     "glusterfs-distributed-storage": 5051,
     "kubernetes-1-22-ha-install": 9086,
@@ -41,7 +45,9 @@
     "lvs-keepalived": 5850,
     "nginx-trailing-slash": 734,
     "nginx-tuning": 2006,
-    "redis-tuning": 2385
+    "redis-tuning": 2385,
+    "rke2-ha-install": 6900,
+    "vault-dynamic-db-creds": 5705
   },
-  "total_chars": 68314
+  "total_chars": 87901
 }

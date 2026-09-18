@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamic Database Credentials with Vault</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="site-title" href="../">caizhe.org</a>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Dynamic Database Credentials with Vault</h1>
+      <div class="article-meta">
+        <time datetime="2026-09-18">Sep 18, 2026</time>
+        <span>5 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <h2 id="the-idea">
+      The idea
+    </h2>
+    <p>
+      The usual pattern for application database access is a long-lived account with a
+      password stored somewhere &mdash; a ConfigMap, a Secret, a config file, or worst of
+      all hard-coded. That password is shared by every replica, it never rotates on its
+      own, and revoking it means coordinating a change across everything that uses it.
+    </p>
+    <p>
+      Vault's database secrets engine inverts this. Instead of handing out one password
+      that lives forever, Vault creates a <strong>brand-new database role with a unique
+      password every time an application asks for credentials</strong>, and then drops it
+      when its time to live runs out:
+    </p>
+    <pre><code>app + vault client  --&gt;  vault server  --&gt;  DB (create temp user + password)
+
+app (uses that temp user)  --&gt;  DB</code></pre>
+    <p>
+      The application never sees a static credential. Each instance gets its own identity
+      at the database level, the lease expires on its own, and revoking access means
+      revoking a lease rather than rotating a shared secret. If a credential leaks, the
+      damage is bounded by its TTL.
+    </p>
+
+    <h2 id="step-1-connection">
+      1. Create the database connection
+    </h2>
+    <p>
+      The connection tells Vault how to reach PostgreSQL and which account to use when
+      creating other users. That account needs the <code>CREATEROLE</code> privilege, since
+      Vault will be issuing <code>CREATE ROLE</code> statements.
+    </p>
+    <p>
+      Open <strong>Secrets Engines &rarr; database &rarr; Create connection</strong> and
+      fill in the plugin, connection URL, and the admin credentials Vault should use:
+    </p>
+    <img src="connection.png" alt="Vault UI: Edit Connection form for the database plugin, with the PostgreSQL connection URL and the administrative username">
+    <p>
+      The connection URL follows the standard libpq format:
+    </p>
+    <pre><code>postgresql://{{username}}:{{password}}@&lt;db-host&gt;:15432/postgres?sslmode=disable</code></pre>
+    <p>
+      The <code>{{username}}</code> and <code>{{password}}</code> placeholders are filled
+      from separate fields in the form; they are not part of the DSN you type literally.
+      Leave <code>sslmode=disable</code> only for a trusted network &mdash; over anything
+      else, use <code>require</code> or <code>verify-full</code>.
+    </p>
+    <p>
+      Checking <em>Connection will be verified</em> makes Vault test the connection
+      immediately, which is worth doing: it turns a permissions problem into an error at
+      configuration time instead of a failure the first time an app asks for credentials.
+    </p>
+
+    <h2 id="step-2-role">
+      2. Create the role
+    </h2>
+    <p>
+      A role is a template for what gets created. The role name is what applications
+      request &mdash; here <code>app1-rw</code> &mdash; and the type is
+      <code>dynamic</code>, meaning every request produces a fresh database user.
+    </p>
+    <img src="role.png" alt="Vault UI: Edit Role form showing the role name app1-rw, the postgresql connection, dynamic role type, and TTL settings">
+    <p>
+      The two TTL settings control the lifecycle:
+    </p>
+    <ul>
+      <li>
+        <strong>Time-to-Live</strong> &mdash; how long a credential is valid before Vault
+        revokes it. This is the number that bounds your exposure.
+      </li>
+      <li>
+        <strong>Max Time-to-Live</strong> &mdash; the ceiling on renewal. A client can
+        extend its lease past the TTL, but never beyond this.
+      </li>
+    </ul>
+    <p>
+      The screenshot shows both set to 1 minute, which is a test configuration. It is
+      actually a good way to start, because a minute is short enough to watch the whole
+      create-and-revoke cycle while you are wiring things up. Raise it to something like
+      1&ndash;24 hours once you have confirmed the flow works, and remember that the
+      application needs to handle the credential expiring underneath it.
+    </p>
+
+    <h2 id="step-3-statements">
+      3. The SQL statements
+    </h2>
+    <p>
+      This is where the role's behavior is actually defined. Vault substitutes
+      <code>{{name}}</code>, <code>{{password}}</code>, and <code>{{expiration}}</code>
+      into the statements you provide.
+    </p>
+    <img src="statements.png" alt="Vault UI: statement fields for creation, revocation, rollback, and renewal">
+    <p>
+      Four statement types, each used at a different point in the lease lifecycle:
+    </p>
+    <table>
+      <thead>
+        <tr><th>Statement</th><th>When it runs</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Creation</strong></td><td>When a client requests credentials</td></tr>
+        <tr><td><strong>Revocation</strong></td><td>When the lease ends, is revoked, or Vault shuts down cleanly</td></tr>
+        <tr><td><strong>Rollback</strong></td><td>When creation fails partway through, to clean up</td></tr>
+        <tr><td><strong>Renewal</strong></td><td>When a client extends its lease</td></tr>
+      </tbody>
+    </table>
+    <p>
+      A working set for a read/write role:
+    </p>
+    <pre><code>-- creation
+CREATE ROLE "{{name}}" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';
+GRANT app_rw TO "{{name}}";
+
+-- revocation
+DROP ROLE IF EXISTS "{{name}}";
+
+-- rollback
+DROP ROLE IF EXISTS "{{name}}";
+
+-- renewal
+ALTER ROLE "{{name}}" VALID UNTIL '{{expiration}}';</code></pre>
+    <p>
+      A few details that matter:
+    </p>
+    <ul>
+      <li>
+        <strong>Grant a role, not table privileges.</strong> The creation statement here
+        adds the new user to an existing <code>app_rw</code> group role. Permissions are
+        managed once on <code>app_rw</code> and every dynamic user inherits them. Issuing
+        <code>GRANT SELECT ON ...</code> per user means editing the Vault role every time
+        your schema changes.
+      </li>
+      <li>
+        <strong><code>VALID UNTIL</code> is a second layer of enforcement.</strong> Vault
+        revokes the role at expiry, but the database itself also refuses the login after
+        <code>{{expiration}}</code>. If Vault is unreachable, the credential still cannot
+        be used indefinitely.
+      </li>
+      <li>
+        <strong>Rollback is not optional.</strong> If a creation statement fails after the
+        role was made but before the grant succeeded, the rollback statement is what
+        removes the orphan. Leaving it empty accumulates stray roles over time.
+      </li>
+      <li>
+        <strong>Revocation must be idempotent.</strong> <code>DROP ROLE IF EXISTS</code>
+        rather than plain <code>DROP ROLE</code> &mdash; Vault may retry, and a failure
+        here leaves credentials alive after their lease ended.
+      </li>
+    </ul>
+
+    <h2 id="step-4-test">
+      4. Test it
+    </h2>
+    <p>
+      Generate credentials from the Vault CLI:
+    </p>
+    <pre><code>vault read database/creds/app1-rw</code></pre>
+    <pre><code>Key      Value
+------   ------------------------------------------------
+username v-root-app1-rw-pR07X8aIrBhyx2hylf6W-1763201934
+password &lt;generated-password&gt;</code></pre>
+    <p>
+      Note the shape of the username. It is not a fixed name with a rotating password
+      &mdash; it is a unique name per lease, built from the role and a random suffix. That
+      is what makes per-instance attribution possible in database logs, and it is why
+      revoking one lease never affects another.
+    </p>
+    <p>
+      Minutes later, the same view in a database client shows the difference directly
+      &mdash; here through Navicat, where several <code>v-root-app1-rw-*</code> roles from
+      earlier test runs have appeared, each with its own expiry:
+    </p>
+    <img src="roles-created.png" alt="Navicat role list showing multiple v-root-app1-rw-* roles with individual expiry timestamps">
+    <p>
+      That is the payoff. Every app instance that asked for credentials has its own
+      database role and its own expiry, and none of them shares a password with any other.
+    </p>
+
+    <h2 id="production-notes">
+      Moving to production
+    </h2>
+    <ul>
+      <li>
+        <strong>Never disable <code>VALID UNTIL</code>.</strong> Dropping it from the
+        creation statement makes credentials permanent, which defeats the entire design.
+      </li>
+      <li>
+        <strong>Give the connection's admin account the minimum it needs.</strong> It
+        requires <code>CREATEROLE</code> and enough privilege to grant the target group
+        role. It does not need superuser, and using one makes Vault itself the biggest
+        credential in the system.
+      </li>
+      <li>
+        <strong>Separate roles per access level.</strong> One role granting read/write, a
+        second granting read-only, rather than a single role that everything uses. This is
+        the part that actually reduces risk &mdash; a compromised reporting job cannot
+        write.
+      </li>
+      <li>
+        <strong>Plan for lease expiry in the application.</strong> The driver will lose its
+        connection when the credential is revoked. Either renew the lease ahead of
+        expiration, or re-read credentials and rebuild the connection pool. Ignoring this
+        is the most common way a working Vault setup turns into an outage.
+      </li>
+      <li>
+        <strong>Watch the lease count.</strong> Every <code>vault read</code> creates a
+        role. A client that re-requests credentials on every operation will flood the
+        database with users; cache the credential for its lease duration instead.
+      </li>
+      <li>
+        <strong>Mind connection limits.</strong> PostgreSQL has a
+        <code>max_connections</code> ceiling. Dynamic users each hold their own sessions,
+        so a pool per instance per lease multiplies quickly.
+      </li>
+    </ul>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

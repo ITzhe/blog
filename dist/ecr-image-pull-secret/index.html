@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulling Images from AWS ECR in Kubernetes</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="site-title" href="../">caizhe.org</a>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Pulling Images from AWS ECR in Kubernetes</h1>
+      <div class="article-meta">
+        <time datetime="2026-09-18">Sep 18, 2026</time>
+        <span>6 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <h2 id="the-problem">
+      The problem
+    </h2>
+    <p>
+      An ECR login token is valid for <strong>12 hours</strong>. That is the entire
+      lifespan of the credential you get from <code>aws ecr get-login-password</code>,
+      and it is the thing that makes ECR awkward inside Kubernetes.
+    </p>
+    <p>
+      The trap is that a hand-made pull secret looks like it works. You run
+      <code>kubectl create secret docker-registry</code>, your Pods pull their images,
+      and everything is fine &mdash; until the next day, when the token has expired and
+      new Pods sit in <code>ImagePullBackOff</code> with a 403 from the registry. Existing
+      Pods keep running, which makes the failure worse: the first sign of trouble is a
+      deploy or a node reboot, long after the change that caused it.
+    </p>
+
+    <h2 id="the-approach">
+      The approach
+    </h2>
+    <p>
+      Treat the pull secret as a rotating credential rather than a static one. Run a
+      CronJob inside the cluster that fetches a fresh token every 8 hours and rewrites the
+      Secret. The 8-hour interval leaves plenty of margin inside the 12-hour window, so
+      there is no moment where the stored token is close to expiring.
+    </p>
+    <p>
+      The trade-off is a credential with ECR read access living in the cluster, plus RBAC
+      to let one ServiceAccount manage Secrets in its own namespace. Here is the flow:
+    </p>
+    <pre><code>CronJob (every 8h)
+  |- read AWS keys from Secret "ecr-secret"
+  |- aws ecr get-login-password
+  |- kubectl delete secret ecr-registry-secret --ignore-not-found
+  '- kubectl create secret docker-registry ecr-registry-secret
+
+Deployment
+  '- imagePullSecrets: [ecr-registry-secret]</code></pre>
+
+    <h2 id="prerequisites">
+      Prerequisites: the AWS credentials Secret
+    </h2>
+    <p>
+      Store the IAM keys in the namespace where the workloads live. Create a dedicated
+      IAM user for this and attach <strong>only</strong> the managed policy
+      <code>AmazonEC2ContainerRegistryReadOnly</code>. A key with broader permissions
+      turns any cluster compromise into an AWS compromise.
+    </p>
+    <pre><code>kubectl create secret generic ecr-secret \
+  --from-literal=access_key='&lt;AWS_ACCESS_KEY_ID&gt;' \
+  --from-literal=secret_key='&lt;AWS_SECRET_ACCESS_KEY&gt;' \
+  -n passtobridge</code></pre>
+    <p>
+      Use placeholders and inject the real values from your own pipeline or a password
+      manager. Do not paste live keys into a manifest, a shell history, or a blog post.
+    </p>
+
+    <h2 id="the-cronjob">
+      The CronJob
+    </h2>
+    <p>
+      Save this as <code>ecr-cronjob.yaml</code>. It creates the ServiceAccount, the RBAC
+      to let that account manage Secrets in one namespace, and the CronJob itself.
+    </p>
+    <pre><code>---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-updater
+  namespace: passtobridge
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ecr-updater-role
+  namespace: passtobridge
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "delete", "create", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ecr-updater-rolebinding
+  namespace: passtobridge
+subjects:
+- kind: ServiceAccount
+  name: ecr-updater
+  namespace: passtobridge
+roleRef:
+  kind: Role
+  name: ecr-updater-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ecr-token-refresher
+  namespace: passtobridge
+spec:
+  # every 8 hours (00:00, 08:00, 16:00)
+  schedule: "0 */8 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: ecr-updater
+          containers:
+          - name: refresher
+            image: amazon/aws-cli:latest
+            env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ecr-secret
+                  key: access_key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ecr-secret
+                  key: secret_key
+            - name: AWS_DEFAULT_REGION
+              value: "ap-east-1"
+            command:
+            - /bin/sh
+            - -c
+            - |-
+              set -e
+              KUBECTL=/usr/local/bin/kubectl
+
+              echo "--- 1. verify the mounted kubectl ---"
+              $KUBECTL version --client
+
+              echo "--- 2. fetch an ECR login token ---"
+              TOKEN=$(aws ecr get-login-password --region ${AWS_DEFAULT_REGION})
+
+              echo "--- 3. recreate the Secret ---"
+              # delete then create; --ignore-not-found keeps the first run clean
+              $KUBECTL delete secret ecr-registry-secret -n passtobridge --ignore-not-found
+
+              $KUBECTL create secret docker-registry ecr-registry-secret \
+                --docker-server=839823279171.dkr.ecr.ap-east-1.amazonaws.com \
+                --docker-username=AWS \
+                --docker-password="${TOKEN}" \
+                -n passtobridge
+
+              echo "--- done: ECR credentials refreshed ---"
+            volumeMounts:
+            - name: host-kubectl
+              mountPath: /usr/local/bin/kubectl
+              readOnly: true
+          restartPolicy: OnFailure
+          volumes:
+          - name: host-kubectl
+            hostPath:
+              # RKE2's default kubectl path
+              path: /var/lib/rancher/rke2/bin/kubectl
+              type: File</code></pre>
+
+    <h3 id="why-the-hostpath-mount">
+      Why mount kubectl from the host?
+    </h3>
+    <p>
+      <code>amazon/aws-cli</code> ships the AWS CLI but not kubectl. Rather than build a
+      custom image, the CronJob mounts the host binary through a <code>hostPath</code>
+      volume. Two consequences are worth knowing: the CronJob is pinned to whichever node
+      has that file, and <code>type: File</code> matters &mdash; if the path is missing,
+      the Pod fails loudly at mount time instead of silently running an empty directory.
+    </p>
+    <p>
+      The alternative is to bake both binaries into one image. It is more work up front but
+      removes the node affinity and works the same on any distribution, not just RKE2.
+    </p>
+
+    <h3 id="why-delete-then-create">
+      Why delete then create, instead of patching?
+    </h3>
+    <p>
+      <code>kubectl create secret docker-registry</code> writes the credential into the
+      <code>.dockerconfigjson</code> key in one shot. Updating that key in place is
+      possible but fiddly &mdash; the value is a nested JSON document, so a patch has to
+      re-encode the whole thing. Deleting and recreating is idempotent and obvious.
+    </p>
+    <p>
+      The one thing to keep in mind is the brief window between the delete and the create
+      where the Secret does not exist. Any Pod scheduled in that window has no pull
+      credential. In practice the gap is milliseconds and Pods retry, but if you want to
+      eliminate it entirely, generate the new token first, write it under a temporary name,
+      and swap the reference.
+    </p>
+
+    <h2 id="workload-manifest">
+      The workload manifest
+    </h2>
+    <p>
+      Every Deployment that pulls from ECR needs to reference the refreshed Secret. Note
+      that <code>imagePullSecrets</code> does not merge &mdash; if you list it here, keep
+      it here and do not rely on the ServiceAccount's own pull secrets.
+    </p>
+    <pre><code>spec:
+  template:
+    spec:
+      # 1. reference the rotating credential
+      imagePullSecrets:
+      - name: ecr-registry-secret
+      # 2. schedule onto worker nodes, away from the masters
+      nodeSelector:
+        ingress-target: "true"
+      containers:
+      - name: my-app
+        image: 839823279171.dkr.ecr.ap-east-1.amazonaws.com/&lt;repository&gt;:&lt;tag&gt;</code></pre>
+
+    <h2 id="verify">
+      Verify it works
+    </h2>
+    <p>
+      Do not wait a day to find out whether the rotation actually runs. Trigger the
+      CronJob manually and check the Secret's age:
+    </p>
+    <pre><code># run the job once, right now
+kubectl create job --from=cronjob/ecr-token-refresher ecr-manual-test -n passtobridge
+
+# watch it finish
+kubectl get pods -n passtobridge -l job-name=ecr-manual-test -w
+kubectl logs -n passtobridge -l job-name=ecr-manual-test
+
+# confirm the Secret was rewritten
+kubectl get secret ecr-registry-secret -n passtobridge \
+  -o jsonpath='{.metadata.creationTimestamp}{"\n"}'</code></pre>
+    <p>
+      The <code>creationTimestamp</code> should be seconds ago, not the day you first
+      created it. That timestamp is the real proof the rotation path works end to end.
+    </p>
+    <p>
+      To confirm the previous token would indeed have failed, an easy check is to compare
+      the decoded credential before and after:
+    </p>
+    <pre><code>kubectl get secret ecr-registry-secret -n passtobridge \
+  -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | head -c 120</code></pre>
+    <p>
+      Set a calendar reminder for the day after deployment and confirm that a Pod created
+      then still pulls successfully. That catches the case where the CronJob runs but
+      writes a credential the kubelet rejects.
+    </p>
+
+    <h2 id="gotchas">
+      Things that bit me
+    </h2>
+    <ul>
+      <li>
+        <strong>The 12-hour limit is on the token, not the IAM key.</strong> The keys stay
+        valid indefinitely; only the derived login token expires. That is exactly why
+        rotating the Secret works and rotating the IAM user is unnecessary.
+      </li>
+      <li>
+        <strong>Region must match the registry.</strong> A token from one region cannot
+        authenticate against another region's registry. Both
+        <code>AWS_DEFAULT_REGION</code> and <code>--docker-server</code> here say
+        <code>ap-east-1</code>; keep them in sync.
+      </li>
+      <li>
+        <strong>Existing Pods do not re-pull.</strong> A stale Secret only surfaces for
+        new Pods, so the failure appears during deploys, scaling, or node reboots. Expect
+        the first symptom to be a deploy that will not roll out.
+      </li>
+      <li>
+        <strong>The CronJob needs the Secret to already exist.</strong> The
+        <code>secretKeyRef</code> entries are required at container start, so
+        <code>ecr-secret</code> must be created before the first run, otherwise the Pod
+        fails to start with a <code>CreateContainerConfigError</code>.
+      </li>
+      <li>
+        <strong>Keep the IAM policy minimal.</strong> ECR read-only is all this needs. A
+        key with write or broad S3 access widens the blast radius for no benefit.
+      </li>
+    </ul>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

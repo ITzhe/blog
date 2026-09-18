@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RKE2 High Availability with Kube-VIP and Cilium</title>
+<link rel="stylesheet" href="../style.css">
+<link rel="icon" href="../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="site-title" href="../">caizhe.org</a>
+    <nav class="site-nav">
+      <a href="../">Home</a>
+      <a href="../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">RKE2 High Availability with Kube-VIP and Cilium</h1>
+      <div class="article-meta">
+        <time datetime="2026-09-18">Sep 18, 2026</time>
+        <span>9 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <p>
+      This is the deployment manual for a three-node RKE2 control plane. It has three
+      deliberate design choices worth stating up front, because they drive almost every
+      command below:
+    </p>
+    <ol>
+      <li>
+        <strong>A control-plane-only VIP.</strong> The virtual IP is used for the API
+        server and nothing else. Application traffic is kept completely separate.
+      </li>
+      <li>
+        <strong>Cilium in native routing mode.</strong> Packets are routed directly
+        between nodes instead of being wrapped in VXLAN, so there is no per-packet
+        encapsulation overhead.
+      </li>
+      <li>
+        <strong>A custom Pod CIDR.</strong> The Pod network is moved off the RKE2 default
+        to <code>10.142.0.0/16</code>.
+      </li>
+    </ol>
+    <p>
+      Target systems: Ubuntu 24.04 or 22.04, layer 2 networking (all nodes in the same
+      broadcast domain).
+    </p>
+
+    <h2 id="node-and-ip-planning">
+      Node and IP planning
+    </h2>
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Hostname</th><th>Physical IP</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>VIP</strong></td><td>&mdash;</td><td><strong>10.2.0.130</strong></td><td><strong>API server HA only</strong></td></tr>
+        <tr><td>Master 1</td><td>k8s-m1</td><td>10.2.0.129</td><td>Initial bootstrap node</td></tr>
+        <tr><td>Master 2</td><td>k8s-m2</td><td>10.2.0.128</td><td>HA node</td></tr>
+        <tr><td>Master 3</td><td>k8s-m3</td><td>10.2.0.127</td><td>HA node</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>Network interface:</strong> <code>ens192</code> (adjust to match your hardware)</li>
+      <li><strong>Pod CIDR:</strong> <code>10.142.0.0/16</code> (custom)</li>
+      <li><strong>Service CIDR:</strong> <code>10.143.0.0/16</code></li>
+    </ul>
+    <p>
+      The Service CIDR is not a cosmetic setting. Once the cluster is up you cannot
+      change it without rebuilding, so pick it once and keep every node consistent.
+    </p>
+
+    <hr>
+
+    <h2 id="base-environment">
+      1. Base environment (all nodes)
+    </h2>
+    <p>
+      <strong>Run every step in this section on all three machines</strong> &mdash;
+      10.2.0.129, 10.2.0.128, and 10.2.0.127.
+    </p>
+
+    <h3 id="kernel-and-firewall">
+      1.1 System cleanup and kernel parameters
+    </h3>
+    <p>
+      Cilium native routing depends on a clean network stack. Leftover iptables rules from
+      a previous Kubernetes install will silently interfere with eBPF programs, so clear
+      them out first.
+    </p>
+    <pre><code># 1. Turn off the host firewall
+systemctl disable --now ufw
+
+# 2. Flush all iptables rules (stale rules break eBPF)
+iptables -F &amp;&amp; iptables -t nat -F &amp;&amp; iptables -t mangle -F &amp;&amp; iptables -X
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+# On Ubuntu 24+, reset nftables as well
+nft flush ruleset
+
+# 3. Enable IP forwarding (required by native routing)
+echo "net.ipv4.ip_forward=1" &gt;&gt; /etc/sysctl.conf
+sysctl -p</code></pre>
+
+    <h3 id="hosts-entry">
+      1.2 Add a hosts entry to prevent a deadlock
+    </h3>
+    <p>
+      This one is easy to skip and painful to debug. Kube-VIP resolves the
+      <code>kubernetes</code> name during startup; if DNS is not up yet, it crashes and
+      the VIP never appears.
+    </p>
+    <pre><code>echo "127.0.0.1 kubernetes" &gt;&gt; /etc/hosts</code></pre>
+
+    <h3 id="crictl-config">
+      1.3 Point crictl at the bundled containerd
+    </h3>
+    <pre><code>cat &lt;&lt;EOF &gt; /etc/crictl.yaml
+runtime-endpoint: unix:///run/k3s/containerd/containerd.sock
+image-endpoint: unix:///run/k3s/containerd/containerd.sock
+timeout: 10
+debug: false
+EOF</code></pre>
+
+    <hr>
+
+    <h2 id="first-master">
+      2. Deploy the first master (10.2.0.129 only)
+    </h2>
+
+    <h3 id="rke2-config">
+      2.1 Create the RKE2 config file
+    </h3>
+    <pre><code>mkdir -p /etc/rancher/rke2/
+
+cat &lt;&lt;EOF &gt; /etc/rancher/rke2/config.yaml
+tls-san:
+  - "10.2.0.130"
+cni: none                       # disable the default CNI
+disable-kube-proxy: true        # disable kube-proxy (Cilium takes over)
+etcd-expose-metrics: true
+cluster-cidr: "10.142.0.0/16"   # custom Pod network
+service-cidr: "10.143.0.0/16"   # custom Service network
+EOF</code></pre>
+
+    <h3 id="kube-vip-static-pod">
+      2.2 Deploy the Kube-VIP static pod
+    </h3>
+    <p>
+      Note the absence of <code>svc_enable</code>. That omission is intentional: it keeps
+      the VIP bound to the control plane only, so no application traffic ever lands on it.
+    </p>
+    <pre><code>mkdir -p /var/lib/rancher/rke2/agent/pod-manifests/
+
+cat &lt;&lt;EOF &gt; /var/lib/rancher/rke2/agent/pod-manifests/kube-vip.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-vip
+  namespace: kube-system
+spec:
+  containers:
+  - name: kube-vip
+    image: ghcr.io/kube-vip/kube-vip:v1.0.3
+    imagePullPolicy: IfNotPresent
+    args:
+    - manager
+    - --vipSubnet
+    - "32"
+    env:
+    - name: vip_arp
+      value: "true"
+    - name: vip_interface
+      value: "ens192"       # confirm your interface name
+    - name: vip_address
+      value: "10.2.0.130"   # control plane VIP
+    - name: cp_enable
+      value: "true"
+    - name: cp_namespace
+      value: "kube-system"
+    - name: vip_leaderelection
+      value: "true"
+    - name: KUBECONFIG
+      value: "/etc/kubernetes/admin.conf"
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+    volumeMounts:
+    - mountPath: /etc/kubernetes/admin.conf
+      name: kubeconfig
+  hostNetwork: true
+  volumes:
+  - hostPath:
+      path: /etc/rancher/rke2/rke2.yaml
+    name: kubeconfig
+EOF</code></pre>
+
+    <h3 id="start-rke2">
+      2.3 Start RKE2 and install kubectl
+    </h3>
+    <pre><code># Install and start
+curl -sfL https://get.rke2.io | sh -
+systemctl enable rke2-server
+systemctl start rke2-server
+
+# Configure kubectl
+mkdir -p ~/.kube
+cp /etc/rancher/rke2/rke2.yaml ~/.kube/config
+chmod 600 ~/.kube/config
+export KUBECONFIG=~/.kube/config
+ln -s /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl</code></pre>
+    <p>
+      RKE2 generates its kubeconfig at <code>/etc/rancher/rke2/rke2.yaml</code>, not the
+      more familiar <code>/etc/kubernetes/admin.conf</code>. The Kube-VIP manifest above
+      mounts the RKE2 path onto the kubeadm path inside the container, because Kube-VIP
+      hard-codes the latter.
+    </p>
+
+    <hr>
+
+    <h2 id="install-cilium">
+      3. Install Cilium
+    </h2>
+    <p>
+      <strong>Run on 10.2.0.129 only</strong>, after the VIP responds. Confirm it does
+      before continuing &mdash; installing Cilium with <code>k8sServiceHost</code>
+      pointing at an address that is not yet up will leave the CNI unable to bootstrap.
+    </p>
+
+    <h3 id="install-helm">
+      3.1 Install Helm
+    </h3>
+    <pre><code>curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+helm repo add cilium https://helm.cilium.io/
+helm repo update</code></pre>
+
+    <h3 id="cilium-native-routing">
+      3.2 Deploy Cilium in native routing mode
+    </h3>
+    <p>
+      The critical detail is <code>ipv4NativeRoutingCIDR</code>. It must match the
+      <code>cluster-cidr</code> you gave RKE2, otherwise the two components will disagree
+      about which addresses are local Pods and traffic will be misrouted.
+    </p>
+    <pre><code>helm install cilium cilium/cilium \
+   --namespace kube-system \
+   --set kubeProxyReplacement=true \
+   --set k8sServiceHost=10.2.0.130 \
+   --set k8sServicePort=6443 \
+   --set cni.exclusive=false \
+   --set routingMode=native \
+   --set autoDirectNodeRoutes=true \
+   --set ipv4NativeRoutingCIDR=10.142.0.0/16 \
+   --set bpf.masquerade=true \
+   --set hubble.relay.enabled=true \
+   --set hubble.ui.enabled=true</code></pre>
+    <ul>
+      <li>
+        <code>kubeProxyReplacement=true</code> works together with
+        <code>disable-kube-proxy: true</code> in the RKE2 config. Turn on one without the
+        other and Service routing breaks.
+      </li>
+      <li>
+        <code>cni.exclusive=false</code> is required on RKE2, which already ships its own
+        CNI configuration files.
+      </li>
+      <li>
+        <code>bpf.masquerade=true</code> moves SNAT from iptables into eBPF, which is the
+        main throughput win over the default setup.
+      </li>
+    </ul>
+
+    <hr>
+
+    <h2 id="join-ha-nodes">
+      4. Join the HA nodes
+    </h2>
+
+    <h3 id="get-token">
+      4.1 Get the node token (on master 1)
+    </h3>
+    <pre><code>cat /var/lib/rancher/rke2/server/node-token
+# copy the output</code></pre>
+
+    <h3 id="config-join-nodes">
+      4.2 Configure the joining nodes (128 and 127)
+    </h3>
+    <pre><code>mkdir -p /etc/rancher/rke2/
+
+# replace &lt;TOKEN&gt; with the value from the previous step
+cat &lt;&lt;EOF &gt; /etc/rancher/rke2/config.yaml
+server: https://10.2.0.130:9345    # point at the VIP
+token: &lt;TOKEN&gt;
+tls-san:
+  - "10.2.0.130"
+cni: none
+disable-kube-proxy: true
+cluster-cidr: "10.142.0.0/16"      # must match master 1
+EOF</code></pre>
+    <p>
+      Note port 9345, not 6443. That is the RKE2 supervisor API used for node
+      registration; 6443 is the Kubernetes API itself.
+    </p>
+
+    <h3 id="preload-kube-vip">
+      4.3 Preload Kube-VIP (128 and 127)
+    </h3>
+    <p>
+      <strong>This step is mandatory.</strong> Copy
+      <code>/var/lib/rancher/rke2/agent/pod-manifests/kube-vip.yaml</code> from master 1
+      to the exact same path on each joining node, before starting RKE2. Without it the
+      new nodes cannot take part in the VIP leader election.
+    </p>
+
+    <h3 id="start-rke2-join">
+      4.4 Start RKE2
+    </h3>
+    <pre><code>curl -sfL https://get.rke2.io | sh -
+systemctl enable rke2-server
+systemctl start rke2-server</code></pre>
+
+    <hr>
+
+    <h2 id="verification">
+      5. Verification
+    </h2>
+
+    <h3 id="check-nodes">
+      5.1 Cluster state
+    </h3>
+    <pre><code>kubectl get nodes -o wide
+# expect: all nodes Ready</code></pre>
+
+    <h3 id="check-cilium">
+      5.2 Confirm the routing mode
+    </h3>
+    <pre><code>kubectl -n kube-system exec -ti ds/cilium -- cilium status | grep -E "Routing|Masquerading"
+# expected:
+# Routing:        Network: Native   Host: BPF
+# Masquerading:   BPF   [ens192]   10.142.0.0/16</code></pre>
+
+    <h3 id="test-pod-cidr">
+      5.3 Deploy a test Pod to validate the new CIDR
+    </h3>
+    <pre><code>kubectl create deployment nginx-test --image=nginx:alpine --replicas=2
+kubectl get pods -l app=nginx-test -o wide
+# expected IP: 10.142.x.x</code></pre>
+
+    <hr>
+
+    <h2 id="direct-pod-access">
+      6. Optional: direct Pod access from your workstation
+    </h2>
+    <p>
+      With native routing there is no encapsulation, so a Pod IP is a real routable
+      address on the LAN. If your workstation is on the same layer 2 network, you can
+      teach it the route and then reach Pods directly &mdash; useful for debugging a
+      service without going through a Service or Ingress.
+    </p>
+    <pre><code># On macOS (needs sudo)
+# Send anything destined for 10.142.x.x to the VIP
+sudo route -n add -net 10.142.0.0/16 10.2.0.130</code></pre>
+    <pre><code>ping 10.142.x.x</code></pre>
+    <p>
+      This is a convenience for a lab or a trusted office network, not something to do
+      from an untrusted machine. On Linux the equivalent is
+      <code>ip route add 10.142.0.0/16 via 10.2.0.130</code>; on Windows,
+      <code>route add 10.142.0.0 mask 255.255.0.0 10.2.0.130</code>.
+    </p>
+    </div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

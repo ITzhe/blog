@@ -66,7 +66,7 @@ TODO_PATTERNS = [
 
 # 分类页目录（由 gen_categories.py 生成，不是文章，不参与正文检查）
 CATEGORY_DIRS = ["docker", "kubernetes", "networking",
-                 "storage", "systems", "other"]
+                 "storage", "systems", "troubleshooting", "other"]
 
 VOID_TAGS = {
     "area", "base", "br", "col", "embed", "hr", "img", "input",
