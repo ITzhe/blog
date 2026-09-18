@@ -1,0 +1,22 @@
+# Hugo 构建产物，由 Cloudflare 自动生成，不要提交
+public/
+resources/_gen/
+
+# Hugo 构建锁文件
+.hugo_build.lock
+
+# 本地配置覆盖文件
+config.local.yaml
+config.*.local.yaml
+
+# 系统 / 编辑器产生的临时文件
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# 备份文件
+*.bak
+
+# AI 助手的工作目录（记忆、技能等元数据）
+.workbuddy-ai/

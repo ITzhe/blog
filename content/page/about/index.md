@@ -1,13 +1,13 @@
 ---
 title: About
-description: Hugo, the world's fastest framework for building websites
+description: Notes on Linux, Kubernetes, and cloud-native infrastructure
 date: '2019-02-28'
 aliases:
   - about-us
   - about-hugo
   - contact
 license: CC BY-NC-ND
-lastmod: '2020-10-09'
+lastmod: '2026-09-18'
 menu:
     main: 
         weight: -90
@@ -15,20 +15,16 @@ menu:
             icon: user
 ---
 
-Written in Go, Hugo is an open source static site generator available under the [Apache Licence 2.0.](https://github.com/gohugoio/hugo/blob/master/LICENSE) Hugo supports TOML, YAML and JSON data file types, Markdown and HTML content files and uses shortcodes to add rich content. Other notable features are taxonomies, multilingual mode, image processing, custom output formats, HTML/CSS/JS minification and support for Sass SCSS workflows.
+Welcome — this is my notebook on Linux, Kubernetes, and cloud-native infrastructure.
 
-Hugo makes use of a variety of open source projects including:
+Most of what you will find here started life as a runbook for a problem I had to solve at work: standing up an OpenLDAP directory, building a highly-available Kubernetes cluster, tuning Nginx, or debugging a redirect rule at 2 a.m. The posts are written to be useful to my future self first — concrete commands, real config files, and the reasoning behind each decision.
 
-* https://github.com/yuin/goldmark
-* https://github.com/alecthomas/chroma
-* https://github.com/muesli/smartcrop
-* https://github.com/spf13/cobra
-* https://github.com/spf13/viper
+> The path is simple; keep it real and keep it short.
 
-Hugo is ideal for blogs, corporate websites, creative portfolios, online magazines, single page applications or even a website with thousands of pages.
+A few things I care about:
 
-Hugo is for people who want to hand code their own website without worrying about setting up complicated runtimes, dependencies and databases.
+- **Reproducible steps.** Every guide should get you from a bare machine to a working result, including the parts that bit me.
+- **Alternatives, not dogma.** Where there is a trade-off — RDB vs AOF, raw vs qcow2, Docker vs KVM — I try to say what it costs.
+- **Honest writing.** Notes are corrections of earlier mistakes, so corrections to these notes are always welcome.
 
-Websites built with Hugo are extremelly fast, secure and can be deployed anywhere including, AWS, GitHub Pages, Heroku, Netlify and any other hosting provider.
-
-Learn more and contribute on [GitHub](https://github.com/gohugoio).
+If something here saved you time, or if you spot an error, the source lives on [GitHub](https://github.com/ITzhe/blog) — open an issue or send a pull request.

@@ -1,39 +1,21 @@
-baseurl: https://caizhe.org
-languageCode: zh-cn
+baseurl: https://www.caizhe.org
+locale: en-us
 theme: hugo-theme-stack
-paginate: 5
-title: 菜菜的运维之路
 
-languages:
-    en:
-        languageName: English
-        title: Example Site
-        description: Example description
-        weight: 2
-    zh-cn:
-        languageName: 中文
-        title: 菜菜的运维之路
-        description: 演示说明
-        weight: 1
-    ar:
-        languageName: عربي
-        languagedirection: rtl
-        title: موقع تجريبي
-        description: وصف تجريبي
-        weight: 3
+pagination:
+    pagerSize: 5
 
-# Change it to your Disqus shortname before using
-disqusShortname: hugo-theme-stack
+title: caizhe.org
+description: Notes on Linux, Kubernetes, and cloud-native infrastructure.
 
-# GA Tracking ID
-googleAnalytics:
-
+# 本站为纯英文单语站点。原来的多语言 `languages` 配置块（en / zh-cn / ar）
+# 已在中文转英文时整体移除，内容直接放在 content/ 下，不再按语言分子目录。
 # Theme i18n support
 # Available values: ar, bn, ca, de, el, en, es, fr, hu, id, it, ja, ko, nl, pt-br, th, uk, zh-cn, zh-hk, zh-tw
-DefaultContentLanguage: zh-cn
+DefaultContentLanguage: en
 
-# Set hasCJKLanguage to true if DefaultContentLanguage is in [zh-cn ja ko]
-# This will make .Summary and .WordCount behave correctly for CJK languages.
+# 如果默认语言是 [zh-cn ja ko]，才需要把 hasCJKLanguage 设为 true，
+# 这样 .Summary 和 .WordCount 对中日韩文本的统计才准确。本站是英文，故为 false。
 hasCJKLanguage: false
 
 permalinks:
@@ -51,15 +33,17 @@ params:
         since: 2020
         customText:
 
+    # busuanzi（不蒜子）是国内专用的访问量统计服务，标签文字是硬编码中文。
+    # 本站已迁到 Cloudflare Pages，故关闭。若以后要面向中文读者再启用，可改为 true。
     busuanzi:
-        enable: true
+        enable: false
     dateFormat:
         published: Jan 02, 2006
         lastUpdated: Jan 02, 2006 15:04 MST
 
     sidebar:
         emoji: 🍥
-        subtitle: "大道至简，真实而简洁"
+        subtitle: "Simple, honest, and to the point"
         avatar:
             enabled: true
             local: true
@@ -225,8 +209,11 @@ related:
 markup:
     goldmark:
         renderer:
-            ## Set to true if you have HTML content inside Markdown
-            unsafe: false
+            ## 是否允许在 Markdown 里写原生 HTML 标签。
+            ## 本站设为 true：因为有几篇文章用了原生 <details>、<summary>
+            ## 和 <img> 标签（可折叠的配置清单、以及指定尺寸的截图）。
+            ## 若改回 false，这些元素会被直接丢弃。
+            unsafe: true
     tableOfContents:
         endLevel: 4
         ordered: true
