@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>301 vs 302: What&#x27;s the Difference · caizhe.org</title>
+<meta name="description" content="The difference between 301 and 302.
+   
+ 
+ 
+  Both the 301 and 302 status codes mean &amp;ldquo;redirect&amp;rdquo;. That is, after the browser receives this">
+<link rel="canonical" href="https://www.caizhe.org/p/301-vs-302-redirect/">
+<link rel="stylesheet" href="../../style.css">
+<link rel="icon" href="../../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../../">Home</a>
+      <a href="../../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">301 vs 302: What&#x27;s the Difference</h1>
+      <div class="article-meta">
+        <time datetime="2016-12-11">Dec 11, 2016</time>
+        <span>2 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <ol>
+  <li>
+    The difference between 301 and 302.
+  </li>
+</ol>
+<p>
+  Both the 301 and 302 status codes mean &ldquo;redirect&rdquo;. That is, after the browser receives this status code from the server, it automatically jumps to a new URL, which it reads from the
+  <code>Location</code>
+  header of the response. From the user&rsquo;s point of view, the address A they typed instantly becomes another address B — that much is shared by both codes.
+</p>
+<p>
+  The difference is this: a 301 means the resource at the old address A has been permanently removed (it is no longer reachable). While a search engine crawls the new content, it also swaps the old URL out for the redirected one.
+</p>
+<p>
+  A 302 means the resource at the old address A is still there (still accessible) and the redirect is only a temporary jump from address A to address B. The search engine crawls the new content but keeps the old URL indexed.
+</p>
+<ol start=2>
+  <li>
+    Why redirect at all?
+  </li>
+</ol>
+<ol>
+  <li>
+    Site restructuring (for example, changing the page directory layout);
+  </li>
+  <li>
+    A page has been moved to a new address;
+  </li>
+  <li>
+    The page&rsquo;s file extension changed (an application needs to rename
+    <code>.php</code>
+    to
+    <code>.html</code>
+    or
+    <code>.shtml</code>
+    ).
+  </li>
+</ol>
+<p>
+  In case 3, without a redirect the old address in a user&rsquo;s bookmarks or in a search engine&rsquo;s database can only return a 404, and the traffic is simply lost. Sites that have registered several domain names also need redirects so that visitors to those domains are sent automatically to the main site.
+</p>
+    </div>
+    <div class="tags"><a href="../../tags/http/">HTTP</a><a href="../../tags/seo/">SEO</a></div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

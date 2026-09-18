@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ClamAV on Linux · caizhe.org</title>
+<meta name="description" content="I have been looking into security lately and noticed there are not many antivirus options on Linux. Today I want to introduce ClamAV, an open-source lightwe">
+<link rel="canonical" href="https://www.caizhe.org/p/clamav/">
+<link rel="stylesheet" href="../../style.css">
+<link rel="icon" href="../../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../../">Home</a>
+      <a href="../../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">ClamAV on Linux</h1>
+      <div class="article-meta">
+        <time datetime="2018-03-13">Mar 13, 2018</time>
+        <span>2 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <p>
+  I have been looking into security lately and noticed there are not many antivirus options on Linux. Today I want to introduce ClamAV, an open-source lightweight antivirus engine.
+</p>
+<p>
+  <strong>Features</strong>
+</p>
+<ol>
+  <li>
+    <p>
+      GNU open-source software
+    </p>
+  </li>
+  <li>
+    <p>
+      Fast scanning
+    </p>
+  </li>
+  <li>
+    <p>
+      Detects 35,000 kinds of viruses, worms, and Trojans, including Microsoft Office documents and macro viruses
+    </p>
+  </li>
+  <li>
+    <p>
+      Can scan inside archives (Zip, RAR, Tar, Gzip, Bzip2, &mldr;)
+    </p>
+  </li>
+  <li>
+    <p>
+      Strong email scanning
+    </p>
+  </li>
+  <li>
+    <p>
+      Highly extensible
+    </p>
+  </li>
+  <li>
+    <p>
+      Sync the time:
+    </p>
+    <p>
+      ntpdate time1.aliyun.com
+    </p>
+  </li>
+  <li>
+    <p>
+      Install ClamAV (you can use the Aliyun EPEL repo):
+    </p>
+    <p>
+      yum install clamav
+    </p>
+  </li>
+  <li>
+    <p>
+      Update the virus database (the first download takes a while):
+    </p>
+    <p>
+      freshclam
+    </p>
+  </li>
+  <li>
+    <p>
+      Test it by downloading a known-bad file:
+    </p>
+    <p>
+      wget
+      <a class=link href=http://www.eicar.org/download/eicar_com.zip target=_blank rel=noopener>http://www.eicar.org/download/eicar_com.zip</a>
+    </p>
+  </li>
+  <li>
+    <p>
+      Scan with
+      <code>clamscan</code>
+      :
+    </p>
+    <p>
+      clamscan -r /etc/
+    </p>
+    <p>
+      …………
+./.rnd: OK
+/eicar_com.zip: Eicar-Test-Signature FOUND
+./.cshrc: OK
+…………
+    </p>
+    <pre><code> ----------- SCAN SUMMARY -----------
+</code></pre>
+    <p>
+      Known viruses: 5748467
+Engine version: 0.99.2
+Scanned directories: 1
+Scanned files: 15
+Infected files: 1
+Data scanned: 0.10 MB
+Data read: 91.95 MB (ratio 0.00:1)
+Time: 19.179 sec (0 m 19 s)
+    </p>
+  </li>
+</ol>
+<p>
+  You can add the
+  <code>--remove</code>
+  flag to delete the infected files as soon as the scan finds them.
+</p>
+<p>
+  You can also add a cron job to scan and update the virus database on a schedule — I will not go into that here.
+</p>
+<p>
+  If you find a virus that ClamAV cannot detect, you can submit the sample at:
+</p>
+<pre><code>  http://www.clamav.net/sendvirus.html
+</code></pre>
+<p>
+  Official site:
+</p>
+<pre><code>  http://www.clamav.net/lang/en/
+  http://www.clamav.net/sendvirus.html
+</code></pre>
+    </div>
+    <div class="tags"><a href="../../tags/security/">Security</a></div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KVM Virtual Machines · caizhe.org</title>
+<meta name="description" content="Recently I had some spare time and compared Docker with KVM. Docker is impressive and has a lot of room to grow, but it still falls short in a few areas — f">
+<link rel="canonical" href="https://www.caizhe.org/p/kvm-virtual-machines/">
+<link rel="stylesheet" href="../../style.css">
+<link rel="icon" href="../../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../../">Home</a>
+      <a href="../../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">KVM Virtual Machines</h1>
+      <div class="article-meta">
+        <time datetime="2016-05-02">May 02, 2016</time>
+        <span>4 minute read</span>
+      </div>
+    </header>
+    <nav class="toc">
+      <div class="toc-title">Table of contents</div>
+      <ol><li><ol><li><a href=#base-environment>Base environment</a></li><li><a href=#check-whether-virtualization-is-supported>Check whether virtualization is supported</a></li><li><a href=#install>Install</a></li><li><a href=#start>Start</a></li><li><a href=#create-a-virtual-machine>Create a virtual machine</a></li></ol></li><li><a href=#scaling-kvm-up-and-down>Scaling KVM up and down</a><ol><li><ol><li><a href=#memory>Memory</a></li><li><a href=#disk>Disk</a></li></ol></li></ol></li><li><a href=#format-conversion>Format conversion</a></li></ol><ol><li><a href=#bridging-the-virtual-machine-to-a-physical-nic>Bridging the virtual machine to a physical NIC</a></li></ol>
+    </nav>
+    <div class="article-body">
+    <p>
+  Recently I had some spare time and compared Docker with KVM. Docker is impressive and has a lot of room to grow, but it still falls short in a few areas — for example, isolation is not great. I will revisit it in a couple of years once it has matured. For now KVM feels more practical. Here is a write-up I put together from playing around with it, shared for anyone interested:
+</p>
+<h3 id=base-environment>
+  Base environment
+</h3>
+<pre><code>[root@localhost ~]# cat /etc/redhat-release 
+CentOS Linux release 7.1.1503 (Core) 
+[root@localhost ~]# uname -r
+3.10.0-229.el7.x86_64
+</code></pre>
+<h3 id=check-whether-virtualization-is-supported>
+  Check whether virtualization is supported
+</h3>
+<pre><code>grep -E '(vmx|svm)' /proc/cpuinfo
+</code></pre>
+<h3 id=install>
+  Install
+</h3>
+<pre><code>yum install qemu-kvm libvirt libvirt-python libguestfs-tools virt-install qemu-kvm-toools virt-manager
+</code></pre>
+<h3 id=start>
+  Start
+</h3>
+<pre><code>systemctl start libvirtd
+systemctl status libvirtd
+</code></pre>
+<h3 id=create-a-virtual-machine>
+  Create a virtual machine
+</h3>
+<pre><code>qemu-img create -f raw Centos-7.raw 10G		# create an empty 10G raw disk in the current directory
+
+virt-install --name Centos-7 --ram 1024 --vcpus=1 --disk path=Centos-7.raw --cdrom=CentOS-7-x86_64-DVD-1503-01_2.iso  --graphics vnc,listen=0.0.0.0 
+</code></pre>
+<p>
+  Then connect to the host with a VNC client (installing the OS is out of scope here).
+</p>
+<p>
+  List the running virtual machines:
+</p>
+<pre><code>virsh list --all
+
+ Id    Name                           State
+----------------------------------------------------
+ 7     Centos-7                       running
+</code></pre>
+<p>
+  Show detailed information about a virtual machine:
+</p>
+<pre><code>[root@localhost media]# virsh dominfo  Centos-7
+Id:             7
+Name:           Centos-7
+UUID:          544cdb00-6c2c-4c93-9e11-086920b89320
+OS Type:        hvm
+State:          running
+CPU(s):         1
+CPU time:       46.9s
+Max memory:     1048576 KiB
+Used memory:    1048576 KiB
+Persistent:     yes
+Autostart:      disable
+Managed save:   no
+Security model: none
+Security DOI:   0	
+</code></pre>
+<h2 id=scaling-kvm-up-and-down>
+  Scaling KVM up and down
+</h2>
+<h4 id=memory>
+  Memory
+</h4>
+<pre><code>virsh setmem Centos-7 512M
+</code></pre>
+<h4 id=disk>
+  Disk
+</h4>
+<p>
+  Disks can also be resized dynamically, but in my experience this is not advisable — you can lose data. If a disk runs out of space, just add another disk instead.
+</p>
+<h2 id=format-conversion>
+  Format conversion
+</h2>
+<pre><code>[root@linux-node2 opt]# qemu-img convert -f raw -O qcow2 Centos-7.raw Centos-7.qcow2
+
+[root@linux-node2 opt]# ll -h Centos-7.*
+-rw-r--r-- 1 root root 1017M May  4 16:18 Centos-7.qcow2
+-rw-r--r-- 1 qemu qemu   10G May  4 16:11 Centos-7.raw
+</code></pre>
+<h1 id=pros-and-cons-of-raw-vs-qcow2>
+  Pros and cons of RAW vs QCOW2
+</h1>
+<pre><code>raw is the most primitive format and has the best I/O performance, bar none.
+Its downside is a very limited feature set: snapshots, encryption, and
+compression are all unsupported, and it is huge — allocating 10G really
+does consume 10G from the start.
+qcow2 is the opposite: feature-rich, supporting snapshots, encryption, and
+compression, and it uses space efficiently by storing only the changes on
+top of the base image — but performance is worse than raw.
+</code></pre>
+<h2 id=bridging-the-virtual-machine-to-a-physical-nic>
+  Bridging the virtual machine to a physical NIC
+</h2>
+<p>
+  At this point the virtual machine still has no network access — it is just running a system. To get it online:
+</p>
+<pre><code>brctl addbr br0
+</code></pre>
+<p>
+  Create a virtual bridge interface named
+  <code>br0</code>
+  :
+</p>
+<pre><code>brctl addif br0 eth0
+</code></pre>
+<p>
+  Bridge it to
+  <code>eth0</code>
+  . Be careful: this will drop your connection to the server, because the server&rsquo;s
+  <code>eth0</code>
+  has no IP address.
+</p>
+<pre><code> ip addr del dev eth0 192.168.56.11/24
+</code></pre>
+<p>
+  Remove the original IP address from
+  <code>eth0</code>
+  :
+</p>
+<pre><code>ifconfig br0 192.168.56.11/24 up
+</code></pre>
+<p>
+  You can now reach the server again, but networking still will not work because the route is wrong. Add:
+</p>
+<pre><code>route add default gw 1.1.1.1（gateway address）
+</code></pre>
+<p>
+  This will disconnect you from the KVM virtual machine — that is fine. Edit the virtual machine&rsquo;s XML file:
+</p>
+<pre><code>virsh edit Centos-7		# change it to the following two lines
+
+     &lt;interface type='bridge'&gt;
+       &lt;source bridge='br0'/&gt;
+</code></pre>
+<p>
+  Reboot:
+</p>
+<pre><code>virsh  reboot Centos-7
+</code></pre>
+<p>
+  Then configure the IP address, gateway, DNS, and so on, and it will be online. I will not demonstrate that here.
+</p>
+<hr>
+<hr>
+<hr>
+<p>
+  A few commonly used commands:
+</p>
+<p>
+  Power on:
+</p>
+<pre><code>virsh start test1
+</code></pre>
+<p>
+  Power off:
+</p>
+<pre><code>virsh shutdown test1
+</code></pre>
+<p>
+  Force power off:
+</p>
+<pre><code>virsh destroy test1
+</code></pre>
+<p>
+  Reboot:
+</p>
+<pre><code>virsh reboot test1
+</code></pre>
+<p>
+  Start a domain from a config file:
+</p>
+<pre><code>virsh create /etc/libvirt/qemu/test1.xml
+</code></pre>
+<p>
+  Check domain status:
+</p>
+<pre><code>virsh list --all
+</code></pre>
+<p>
+  Suspend a virtual machine:
+</p>
+<pre><code>virsh suspend test1
+</code></pre>
+<p>
+  Save a virtual machine:
+</p>
+<pre><code>virsh save test1  
+or
+virsh dumpxml Centos-7 &gt; dump_kvm.xml
+</code></pre>
+<p>
+  Restore a virtual machine:
+</p>
+<pre><code>virsh resume test1
+</code></pre>
+<hr>
+<h1 id=snapshots>
+  Snapshots
+</h1>
+<p>
+  Snapshot files are stored in
+  <code>/var/lib/libvirt/qemu/snapshot/</code>
+  by default.
+</p>
+<p>
+  Take a snapshot:
+</p>
+<pre><code>virsh snapshot-create test1
+</code></pre>
+<p>
+  List snapshots:
+</p>
+<pre><code>virsh snapshot-list test1
+
+	 Name                 Creation Time             State
+------------------------------------------------------------
+ 1486394873           2017-02-06 23:27:53 +0800 shutoff				#previous snapshot
+ 1486394993           2017-02-06 23:29:53 +0800 shutoff				#this snapshot
+</code></pre>
+<p>
+  Restore a snapshot:
+</p>
+<pre><code>virsh snapshot-revert test1 1486394873
+</code></pre>
+<hr>
+<hr>
+<p>
+  Example 1: changing the CPU count
+</p>
+<pre><code>virsh edit Centos-7
+
+&lt;vcpu placement='auto' current='1'&gt;4&lt;/vcpu&gt;						#max 4 CPUs, currently 1
+
+virsh setvcpus Centos-7 2 --live								#you can also use --config
+virsh reboot  Centos-7											#restart optional
+</code></pre>
+<p>
+  Example 2: adding a disk
+</p>
+<pre><code>qemu-img create -f qcow2 add.img 20G
+
+virsh attach-disk Centos-7 /opt/add.img sdb					#hot-add a disk (lost on reboot)
+
+virsh edit Centos-7											#write it into the config file
+	…………
+    &lt;/disk&gt;
+&lt;disk type='file' device='disk'&gt;
+  &lt;driver name='qemu' type='qcow2' cache='none'/&gt;
+  &lt;source file='/opt/add.img'/&gt;
+  &lt;target dev='sdb' bus='virtio'/&gt;
+  &lt;address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/&gt;
+&lt;/disk&gt;
+
+virsh reboot Centos-7
+</code></pre>
+<p>
+  Later I found a simpler approach:
+</p>
+<pre><code>virsh attach-disk Centos-7 /opt/add.img sdb --config
+</code></pre>
+    </div>
+    <div class="tags"><a href="../../tags/kvm/">KVM</a></div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

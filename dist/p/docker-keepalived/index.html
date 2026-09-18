@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing Keepalived with Docker · caizhe.org</title>
+<meta name="description" content="Master node:
+ 
+ 
+   
+     
+       
+         
+            1
+   2
+   3
+   4
+   5
+   6
+   7
+   8
+   9
+  10
+  11
+  12
+  13
+  14
+  15
+  16">
+<link rel="canonical" href="https://www.caizhe.org/p/docker-keepalived/">
+<link rel="stylesheet" href="../../style.css">
+<link rel="icon" href="../../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../../">Home</a>
+      <a href="../../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Installing Keepalived with Docker</h1>
+      <div class="article-meta">
+        <time datetime="2023-03-13">Mar 13, 2023</time>
+        <span>1 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <p>
+  Master node:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl><span class=o>[</span>root@59-139 ~<span class=o>]</span><span class=c1># docker run -d --net=host --cap-add NET_ADMIN \</span>
+</span></span><span class=line><span class=cl> -e <span class=nv>KEEPALIVED_AUTOCONF</span><span class=o>=</span><span class=nb>true</span>                  <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> <span class=c1># role \</span>
+</span></span><span class=line><span class=cl> -e <span class=nv>KEEPALIVED_STATE</span><span class=o>=</span>MASTER                   <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> <span class=c1># network interface to bind \</span>
+</span></span><span class=line><span class=cl> -e <span class=nv>KEEPALIVED_INTERFACE</span><span class=o>=</span>ens33                 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> <span class=c1># keepalived communication ID \</span>
+</span></span><span class=line><span class=cl> -e <span class=nv>KEEPALIVED_VIRTUAL_ROUTER_ID</span><span class=o>=</span><span class=m>2</span>            <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> <span class=c1># unicast source address \</span>
+</span></span><span class=line><span class=cl> -e <span class=nv>KEEPALIVED_UNICAST_SRC_IP</span><span class=o>=</span>192.168.59.139  <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> -e <span class=nv>KEEPALIVED_UNICAST_PEER_0</span><span class=o>=</span>192.168.59.140  <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> <span class=c1># interface to track \</span>
+</span></span><span class=line><span class=cl> -e <span class=nv>KEEPALIVED_TRACK_INTERFACE_1</span><span class=o>=</span>ens33         <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> <span class=c1># virtual VIP \</span>
+</span></span><span class=line><span class=cl> -e <span class=nv>KEEPALIVED_VIRTUAL_IPADDRESS_1</span><span class=o>=</span><span class=s2>&#34;192.168.59.100/24 dev ens33&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> arcts/keepalived
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Backup node:
+</p>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl><span class=o>[</span>root@59-139 ~<span class=o>]</span><span class=c1># docker run -d --net=host --cap-add NET_ADMIN \</span>
+</span></span><span class=line><span class=cl> -e <span class=nv>KEEPALIVED_AUTOCONF</span><span class=o>=</span><span class=nb>true</span>                  <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> -e <span class=nv>KEEPALIVED_STATE</span><span class=o>=</span>BACKUP                   <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> -e <span class=nv>KEEPALIVED_INTERFACE</span><span class=o>=</span>ens33                 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> -e <span class=nv>KEEPALIVED_VIRTUAL_ROUTER_ID</span><span class=o>=</span><span class=m>2</span>            <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> -e <span class=nv>KEEPALIVED_UNICAST_SRC_IP</span><span class=o>=</span>192.168.59.140  <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> -e <span class=nv>KEEPALIVED_UNICAST_PEER_0</span><span class=o>=</span>192.168.59.139  <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> -e <span class=nv>KEEPALIVED_TRACK_INTERFACE_1</span><span class=o>=</span>ens33         <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> -e <span class=nv>KEEPALIVED_VIRTUAL_IPADDRESS_1</span><span class=o>=</span><span class=s2>&#34;192.168.59.100/24 dev ens33&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span> arcts/keepalived
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<hr>
+<p>
+  Reference:
+  <a class=link href=https://hub.docker.com/r/arcts/keepalived target=_blank rel=noopener>https://hub.docker.com/r/arcts/keepalived</a>
+</p>
+    </div>
+    <div class="tags"><a href="../../tags/quick-deploy/">Quick Deploy</a><a href="../../tags/docker/">docker</a></div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

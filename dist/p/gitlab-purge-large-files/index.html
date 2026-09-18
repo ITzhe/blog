@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Purging Large Files from a GitLab Repository · caizhe.org</title>
+<meta name="description" content="First, disable branch protection on the remote repository so force pushes are allowed: &amp;ldquo;Settings&amp;rdquo; -&gt; &amp;ldquo;Repository&amp;rdquo; -&gt; s">
+<link rel="canonical" href="https://www.caizhe.org/p/gitlab-purge-large-files/">
+<link rel="stylesheet" href="../../style.css">
+<link rel="icon" href="../../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../../">Home</a>
+      <a href="../../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Purging Large Files from a GitLab Repository</h1>
+      <div class="article-meta">
+        <time datetime="2023-03-01">Mar 01, 2023</time>
+        <span>2 minute read</span>
+      </div>
+    </header>
+    <div class="article-body">
+    <ol>
+  <li>
+    <p>
+      First, disable branch protection on the remote repository so force pushes are allowed: &ldquo;Settings&rdquo; -> &ldquo;Repository&rdquo; -> scroll down to &ldquo;Protected branches&rdquo;.
+    </p>
+  </li>
+  <li>
+    <p>
+      Clone the project and fetch every branch:
+    </p>
+  </li>
+</ol>
+<div class="goat svg-container">
+  <svg font-family="Menlo,Lucida Console,monospace" viewBox="0 0 872 89">
+  <g transform="translate(8,16)">
+  <path d="M168 32h8" fill="none" stroke="currentcolor"/>
+  <path d="M208 32h8" fill="none" stroke="currentcolor"/>
+  <path d="M520 32h8" fill="none" stroke="currentcolor"/>
+  <path d="M80 48h8" fill="none" stroke="currentcolor"/>
+  <path d="M72 64h8" fill="none" stroke="currentcolor"/>
+  <path d="M196 24l8 16" fill="none" stroke="currentcolor"/>
+  <polygon points="184.000000,32.000000 172.000000,26.400000 172.000000,37.599998" fill="currentcolor" transform="rotate(90.000000, 176.000000, 32.000000)"/>
+  <polygon points="224.000000,32.000000 212.000000,26.400000 212.000000,37.599998" fill="currentcolor" transform="rotate(0.000000, 216.000000, 32.000000)"/>
+  <text text-anchor="middle" x="0" y="4" fill="currentcolor" style="font-size:1em">g</text>
+  <text text-anchor="middle" x="0" y="20" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="0" y="36" fill="currentcolor" style="font-size:1em">g</text>
+  <text text-anchor="middle" x="0" y="52" fill="currentcolor" style="font-size:1em">g</text>
+  <text text-anchor="middle" x="0" y="68" fill="currentcolor" style="font-size:1em">g</text>
+  <text text-anchor="middle" x="8" y="4" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="8" y="20" fill="currentcolor" style="font-size:1em">d</text>
+  <text text-anchor="middle" x="8" y="36" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="8" y="52" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="8" y="68" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="16" y="4" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="16" y="36" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="16" y="52" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="16" y="68" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="24" y="20" fill="currentcolor" style="font-size:1em">x</text>
+  <text text-anchor="middle" x="32" y="4" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="32" y="20" fill="currentcolor" style="font-size:1em">x</text>
+  <text text-anchor="middle" x="32" y="36" fill="currentcolor" style="font-size:1em">b</text>
+  <text text-anchor="middle" x="32" y="52" fill="currentcolor" style="font-size:1em">f</text>
+  <text text-anchor="middle" x="32" y="68" fill="currentcolor" style="font-size:1em">p</text>
+  <text text-anchor="middle" x="40" y="4" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="40" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="40" y="52" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="40" y="68" fill="currentcolor" style="font-size:1em">u</text>
+  <text text-anchor="middle" x="48" y="4" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="48" y="20" fill="currentcolor" style="font-size:1em">#</text>
+  <text text-anchor="middle" x="48" y="36" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="48" y="52" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="48" y="68" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="56" y="4" fill="currentcolor" style="font-size:1em">n</text>
+  <text text-anchor="middle" x="56" y="36" fill="currentcolor" style="font-size:1em">n</text>
+  <text text-anchor="middle" x="56" y="52" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="56" y="68" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="64" y="4" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="64" y="20" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="64" y="36" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="64" y="52" fill="currentcolor" style="font-size:1em">h</text>
+  <text text-anchor="middle" x="72" y="20" fill="currentcolor" style="font-size:1em">n</text>
+  <text text-anchor="middle" x="72" y="36" fill="currentcolor" style="font-size:1em">h</text>
+  <text text-anchor="middle" x="80" y="4" fill="currentcolor" style="font-size:1em">x</text>
+  <text text-anchor="middle" x="80" y="20" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="80" y="68" fill="currentcolor" style="font-size:1em">-</text>
+  <text text-anchor="middle" x="88" y="4" fill="currentcolor" style="font-size:1em">x</text>
+  <text text-anchor="middle" x="88" y="20" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="88" y="36" fill="currentcolor" style="font-size:1em">-</text>
+  <text text-anchor="middle" x="88" y="52" fill="currentcolor" style="font-size:1em">-</text>
+  <text text-anchor="middle" x="88" y="68" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="96" y="4" fill="currentcolor" style="font-size:1em">x</text>
+  <text text-anchor="middle" x="96" y="20" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="96" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="96" y="52" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="96" y="68" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="104" y="52" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="104" y="68" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="112" y="4" fill="currentcolor" style="font-size:1em">#</text>
+  <text text-anchor="middle" x="112" y="20" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="112" y="36" fill="currentcolor" style="font-size:1em">|</text>
+  <text text-anchor="middle" x="112" y="52" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="120" y="20" fill="currentcolor" style="font-size:1em">h</text>
+  <text text-anchor="middle" x="128" y="4" fill="currentcolor" style="font-size:1em">p</text>
+  <text text-anchor="middle" x="128" y="20" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="128" y="36" fill="currentcolor" style="font-size:1em">g</text>
+  <text text-anchor="middle" x="136" y="4" fill="currentcolor" style="font-size:1em">u</text>
+  <text text-anchor="middle" x="136" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="144" y="4" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="144" y="20" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="144" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="152" y="4" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="152" y="20" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="152" y="36" fill="currentcolor" style="font-size:1em">p</text>
+  <text text-anchor="middle" x="160" y="4" fill="currentcolor" style="font-size:1em">s</text>
+  <text text-anchor="middle" x="160" y="20" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="168" y="20" fill="currentcolor" style="font-size:1em">n</text>
+  <text text-anchor="middle" x="176" y="4" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="176" y="20" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="184" y="4" fill="currentcolor" style="font-size:1em">h</text>
+  <text text-anchor="middle" x="184" y="20" fill="currentcolor" style="font-size:1em">d</text>
+  <text text-anchor="middle" x="192" y="4" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="200" y="20" fill="currentcolor" style="font-size:1em">d</text>
+  <text text-anchor="middle" x="208" y="4" fill="currentcolor" style="font-size:1em">m</text>
+  <text text-anchor="middle" x="208" y="20" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="216" y="4" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="216" y="20" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="224" y="4" fill="currentcolor" style="font-size:1em">s</text>
+  <text text-anchor="middle" x="224" y="20" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="232" y="4" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="232" y="20" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="240" y="4" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="240" y="20" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="240" y="36" fill="currentcolor" style="font-size:1em">|</text>
+  <text text-anchor="middle" x="248" y="4" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="248" y="20" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="256" y="20" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="256" y="36" fill="currentcolor" style="font-size:1em">w</text>
+  <text text-anchor="middle" x="264" y="4" fill="currentcolor" style="font-size:1em">b</text>
+  <text text-anchor="middle" x="264" y="20" fill="currentcolor" style="font-size:1em">y</text>
+  <text text-anchor="middle" x="264" y="36" fill="currentcolor" style="font-size:1em">h</text>
+  <text text-anchor="middle" x="272" y="4" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="272" y="36" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="280" y="4" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="280" y="36" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="288" y="4" fill="currentcolor" style="font-size:1em">n</text>
+  <text text-anchor="middle" x="288" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="296" y="4" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="304" y="4" fill="currentcolor" style="font-size:1em">h</text>
+  <text text-anchor="middle" x="304" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="312" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="320" y="4" fill="currentcolor" style="font-size:1em">b</text>
+  <text text-anchor="middle" x="320" y="36" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="328" y="4" fill="currentcolor" style="font-size:1em">y</text>
+  <text text-anchor="middle" x="328" y="36" fill="currentcolor" style="font-size:1em">d</text>
+  <text text-anchor="middle" x="344" y="4" fill="currentcolor" style="font-size:1em">d</text>
+  <text text-anchor="middle" x="344" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="352" y="4" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="352" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="360" y="4" fill="currentcolor" style="font-size:1em">f</text>
+  <text text-anchor="middle" x="360" y="36" fill="currentcolor" style="font-size:1em">m</text>
+  <text text-anchor="middle" x="368" y="4" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="368" y="36" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="376" y="4" fill="currentcolor" style="font-size:1em">u</text>
+  <text text-anchor="middle" x="376" y="36" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="384" y="4" fill="currentcolor" style="font-size:1em">l</text>
+  <text text-anchor="middle" x="384" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="392" y="4" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="392" y="36" fill="currentcolor" style="font-size:1em">;</text>
+  <text text-anchor="middle" x="408" y="36" fill="currentcolor" style="font-size:1em">d</text>
+  <text text-anchor="middle" x="416" y="36" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="432" y="36" fill="currentcolor" style="font-size:1em">g</text>
+  <text text-anchor="middle" x="440" y="36" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="448" y="36" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="464" y="36" fill="currentcolor" style="font-size:1em">b</text>
+  <text text-anchor="middle" x="472" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="480" y="36" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="488" y="36" fill="currentcolor" style="font-size:1em">n</text>
+  <text text-anchor="middle" x="496" y="36" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="504" y="36" fill="currentcolor" style="font-size:1em">h</text>
+  <text text-anchor="middle" x="528" y="36" fill="currentcolor" style="font-size:1em">-</text>
+  <text text-anchor="middle" x="536" y="36" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="544" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="552" y="36" fill="currentcolor" style="font-size:1em">a</text>
+  <text text-anchor="middle" x="560" y="36" fill="currentcolor" style="font-size:1em">c</text>
+  <text text-anchor="middle" x="568" y="36" fill="currentcolor" style="font-size:1em">k</text>
+  <text text-anchor="middle" x="584" y="36" fill="currentcolor" style="font-size:1em">"</text>
+  <text text-anchor="middle" x="592" y="36" fill="currentcolor" style="font-size:1em">$</text>
+  <text text-anchor="middle" x="600" y="36" fill="currentcolor" style="font-size:1em">{</text>
+  <text text-anchor="middle" x="608" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="616" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="624" y="36" fill="currentcolor" style="font-size:1em">m</text>
+  <text text-anchor="middle" x="632" y="36" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="640" y="36" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="648" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="656" y="36" fill="currentcolor" style="font-size:1em">#</text>
+  <text text-anchor="middle" x="664" y="36" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="672" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="680" y="36" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="688" y="36" fill="currentcolor" style="font-size:1em">g</text>
+  <text text-anchor="middle" x="696" y="36" fill="currentcolor" style="font-size:1em">i</text>
+  <text text-anchor="middle" x="704" y="36" fill="currentcolor" style="font-size:1em">n</text>
+  <text text-anchor="middle" x="712" y="36" fill="currentcolor" style="font-size:1em">/</text>
+  <text text-anchor="middle" x="720" y="36" fill="currentcolor" style="font-size:1em">}</text>
+  <text text-anchor="middle" x="728" y="36" fill="currentcolor" style="font-size:1em">"</text>
+  <text text-anchor="middle" x="744" y="36" fill="currentcolor" style="font-size:1em">"</text>
+  <text text-anchor="middle" x="752" y="36" fill="currentcolor" style="font-size:1em">$</text>
+  <text text-anchor="middle" x="760" y="36" fill="currentcolor" style="font-size:1em">r</text>
+  <text text-anchor="middle" x="768" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="776" y="36" fill="currentcolor" style="font-size:1em">m</text>
+  <text text-anchor="middle" x="784" y="36" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="792" y="36" fill="currentcolor" style="font-size:1em">t</text>
+  <text text-anchor="middle" x="800" y="36" fill="currentcolor" style="font-size:1em">e</text>
+  <text text-anchor="middle" x="808" y="36" fill="currentcolor" style="font-size:1em">"</text>
+  <text text-anchor="middle" x="816" y="36" fill="currentcolor" style="font-size:1em">;</text>
+  <text text-anchor="middle" x="832" y="36" fill="currentcolor" style="font-size:1em">d</text>
+  <text text-anchor="middle" x="840" y="36" fill="currentcolor" style="font-size:1em">o</text>
+  <text text-anchor="middle" x="848" y="36" fill="currentcolor" style="font-size:1em">n</text>
+  <text text-anchor="middle" x="856" y="36" fill="currentcolor" style="font-size:1em">e</text>
+</g>
+</svg>
+</div>
+<ol start=3>
+  <li>
+    Find the large files (list the 10 largest):
+  </li>
+</ol>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>git rev-list --objects --all <span class=p>|</span> grep <span class=s2>&#34;</span><span class=k>$(</span>git verify-pack -v .git/objects/pack/*.idx <span class=p>|</span> sort -k <span class=m>3</span> -n <span class=p>|</span> tail -10 <span class=p>|</span> awk <span class=s1>&#39;{print$1}&#39;</span><span class=k>)</span><span class=s2>&#34;</span>
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<ol start=4>
+  <li>
+    Purge the large files you found (one file or directory at a time):
+  </li>
+</ol>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>git filter-branch --force --index-filter <span class=s1>&#39;git rm -rf --cached --ignore-unmatch path/to/file&#39;</span> --prune-empty --tag-name-filter cat -- --all
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<ol start=5>
+  <li>
+    Delete and reclaim the space:
+  </li>
+</ol>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>git <span class=k>for</span>-each-ref --format<span class=o>=</span><span class=s1>&#39;delete %(refname)&#39;</span> refs/original <span class=p>|</span> git update-ref --stdin
+</span></span><span class=line><span class=cl>rm -rf .git/refs/original/
+</span></span><span class=line><span class=cl>git reflog expire --expire<span class=o>=</span>now --all
+</span></span><span class=line><span class=cl>git gc --prune<span class=o>=</span>now
+</span></span><span class=line><span class=cl>git gc --aggressive --prune<span class=o>=</span>now
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<ol start=6>
+  <li>
+    Push to the remote repository:
+  </li>
+</ol>
+<div class=highlight>
+  <div class=chroma>
+    <table class=lntable>
+      <tr>
+        <td class=lntd>
+        <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre>
+      </td>
+      <td class=lntd>
+      <pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>git push origin --force --all
+</span></span><span class=line><span class=cl>git remote prune origin
+</span></span></code></pre>
+    </td>
+  </tr>
+</table>
+</div>
+</div>
+<p>
+  Everyone else can then re-clone the project.
+</p>
+<hr>
+<p>
+  Reference:
+  <a class=link href=https://www.msnao.com/2021/06/15/5031.html target=_blank rel=noopener>https://www.msnao.com/2021/06/15/5031.html</a>
+</p>
+    </div>
+    <div class="tags"><a href="../../tags/git/">git</a></div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>

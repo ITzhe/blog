@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redis Tuning · caizhe.org</title>
+<meta name="description" content="Redis persistence modes
+ 
+ 
+  Redis offers several levels of persistence:
+ 
+  RDB persistence produces a point-in-time snapshot of the dataset at a configur">
+<link rel="canonical" href="https://www.caizhe.org/p/redis-tuning/">
+<link rel="stylesheet" href="../../style.css">
+<link rel="icon" href="../../favicon.ico">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <h1 class="site-title"><a href="../../">caizhe.org</a></h1>
+    <nav class="site-nav">
+      <a href="../../">Home</a>
+      <a href="../../about/">About</a>
+      <a href="https://github.com/ITzhe/blog">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+<article>
+    <header class="article-header">
+      <h1 class="article-title">Redis Tuning</h1>
+      <div class="article-meta">
+        <time datetime="2017-03-02">Mar 02, 2017</time>
+        <span>3 minute read</span>
+      </div>
+    </header>
+    <nav class="toc">
+      <div class="toc-title">Table of contents</div>
+      <ol><li><a href=#rdb-pros-and-cons>RDB pros and cons</a></li><li><a href=#aof-pros-and-cons>AOF pros and cons</a></li></ol>
+    </nav>
+    <div class="article-body">
+    <h1 id=redis-persistence-modes>
+  Redis persistence modes
+</h1>
+<p>
+  Redis offers several levels of persistence:
+</p>
+<pre><code>RDB persistence produces a point-in-time snapshot of the dataset at a configured interval.
+
+AOF persistence records every write command the server executes, and on startup replays them to rebuild the dataset.
+</code></pre>
+<p>
+  Redis can use both AOF and RDB persistence at the same time. In that case, when Redis restarts it prefers the AOF file to rebuild the dataset, because the AOF file usually holds a more complete dataset than the RDB file.
+</p>
+<h2 id=rdb-pros-and-cons>
+  RDB pros and cons
+</h2>
+<p>
+  Pros: very fast failover recovery; maximizes Redis performance; saving is handed off to a forked child process; more supported features.
+</p>
+<p>
+  Cons: if the server fails before a snapshot is saved, some data is lost; forking a child process is expensive; it can cause a pause in client connections.
+</p>
+<h2 id=aof-pros-and-cons>
+  AOF pros and cons
+</h2>
+<p>
+  Pros: the data may be more complete than with RDB, since it writes once per second and loses at most one second of data; operations are appended to a log file that can be rewritten. It records every write command the server executes and replays them on startup to rebuild the dataset. New commands are appended to the end of the file.
+</p>
+<pre><code>Redis can also rewrite the AOF file in the background, so the file does not grow beyond the actual size needed to represent the dataset.
+(What is a rewrite? Given `set a 1`, `set a 2`, `set a 3`, only `set a 3` is kept.)
+</code></pre>
+<p>
+  Cons: larger than RDB, and slower to restore.
+</p>
+<h1 id=redis-replication>
+  Redis replication
+</h1>
+<pre><code>1. Once a replica establishes a master-slave relationship with the master, it sends a PSYNC command to the master;
+2. On receiving PSYNC, the master starts saving a snapshot in the background (the RDB persistence process) and buffers any write requests received in the meantime;
+3. When the snapshot completes, the master sends the snapshot file and all buffered write commands to the replica;
+4. The replica loads the snapshot file and executes the buffered commands it received;
+5. From then on, every write command the master receives is forwarded to the replica, keeping the data consistent.
+</code></pre>
+<h1 id=redis-tuning>
+  Redis tuning
+</h1>
+<p>
+  Change the port:
+</p>
+<pre><code>port 6379		
+</code></pre>
+<p>
+  Set a password:
+</p>
+<pre><code>requirepass XXXXXX
+</code></pre>
+<p>
+  Bind an address:
+</p>
+<pre><code>bind 10.0.0.10
+</code></pre>
+<p>
+  Run in the background:
+</p>
+<pre><code>daemonize yes
+</code></pre>
+<p>
+  Log level:
+</p>
+<pre><code>loglevel warning
+</code></pre>
+<p>
+  Log location:
+</p>
+<pre><code>logfile &quot;/var/log/redis_6379.log&quot;
+</code></pre>
+<p>
+  Persistence:
+</p>
+<pre><code>recommended off on the master, on for replicas
+
+save 900 1
+save 300 10
+save 60 10000                  
+</code></pre>
+<p>
+  Enable read-only mode:
+</p>
+<pre><code>slave-read-only yes
+</code></pre>
+<p>
+  Slow query:
+</p>
+<pre><code>slowlog-log-slower-than 5000
+</code></pre>
+<p>
+  Max memory:
+</p>
+<pre><code>maxmemory 5gb
+</code></pre>
+<h1 id=eviction-policies>
+  Eviction policies
+</h1>
+<pre><code>volatile-lru: evict using the LRU algorithm (evicting the key that was used least recently and least often), only among keys with a TTL set
+allkeys-lru: evict using the LRU algorithm, across all keys
+volatile-random: evict randomly, only among keys with a TTL set
+allkeys-random: evict randomly, across all keys
+volatile-ttl: evict the key with the shortest remaining TTL
+</code></pre>
+    </div>
+    <div class="tags"><a href="../../tags/tuning/">Tuning</a><a href="../../tags/redis/">Redis</a></div>
+    </article>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    &copy; caizhe &middot; <a href="../../about/">About</a>
+  </div>
+</footer>
+</body>
+</html>
